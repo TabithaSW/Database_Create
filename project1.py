@@ -1,16 +1,3 @@
-"""
-Name: Tabitha Weinbrenner
-Netid: 161378611
-PID: I am not sure where to find this!
-
-External Resources Used:
-1. https://www.geeksforgeeks.org/reading-and-writing-xml-files-in-python/
-2. https://docs.python.org/3/library/xml.etree.elementtree.html
-3. https://stackoverflow.com/questions/31613291/python-xml-parsing-with-elementtree-returns-none?rq=1
-4. https://www.geeksforgeeks.org/python-check-whether-given-key-already-exists-in-a-dictionary/
-"""
-
-
 
 import xml.etree.ElementTree as ET
 import json
