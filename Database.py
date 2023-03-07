@@ -1,8 +1,5 @@
 """
 Name: Tabitha Weinbrenner
-Netid: Weinbren
-PID: 161378611
-How long did this project take you: Way too long. Maybe like over 20 hours.
 
 
 Sources:
