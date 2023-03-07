@@ -1,7 +1,4 @@
 """
-Name: Tabitha Weinbrenner
-
-
 Sources:
 https://stackoverflow.com/questions/6473679/transpose-list-of-lists
 https://www.includehelp.com/python/adding-a-tuple-to-list-and-vice-versa.aspx
@@ -18,7 +15,7 @@ TLDR: Stackoverflow, python docs, freecodecamp, sqlpractice, and various website
 # Develop a simple DBMS in python: Handle CREATE, INSERT, SELECT statements
 # Needs to match the SQLite input and output identically (for the subset of SQL used in the projects)
 
-import re  # This is a Python 3 module, I checked the docs.
+import re  
 import string
 import operator
 import copy
