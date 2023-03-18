@@ -1,22 +1,4 @@
-"""
-Name: Tabitha Weinbrenner
-Netid: Weinbren
-PID: 161378611
-How long did this project take you: Way too long. Maybe like over 20 hours.
 
-
-Sources:
-https://stackoverflow.com/questions/6473679/transpose-list-of-lists
-https://www.includehelp.com/python/adding-a-tuple-to-list-and-vice-versa.aspx
-https://datatofish.com/sort-list-python/
-https://www.freecodecamp.org/news/sort-dictionary-by-value-in-python/
-https://stackoverflow.com/questions/60641439/how-to-add-new-value-in-existing-key-in-dictionarywithout-losing-the-previous-v
-https://www.sql-practice.com/
-https://stackoverflow.com/questions/53513/how-do-i-check-if-a-list-is-empty
-https://stackoverflow.com/questions/40820059/append-multiple-dictionaries-into-one-dictionary-sequentially-in-python
-https://docs.python.org/3/py-modindex.html
-TLDR: Stackoverflow, python docs, freecodecamp, sqlpractice, and various websites for specific list/dictionary questions.
-"""
 
 # Develop a simple DBMS in python: Handle CREATE, INSERT, SELECT statements
 # Needs to match the SQLite input and output identically (for the subset of SQL used in the projects)
