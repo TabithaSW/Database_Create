@@ -1,17 +1,4 @@
-"""
 
-Name: Tabitha Weinbrenner
-NetID/PID: Weinbren, 161378611
-Time To Completion: 5-10 hours, I am not sure.
-
-Sources:
-https://www.geeksforgeeks.org/python-check-if-dictionary-is-empty/
-https://stackoverflow.com/questions/47064582/removing-a-dictionary-from-a-nested-dictionary
-https://stackoverflow.com/questions/2052390/manually-raising-throwing-an-exception-in-python
-https://note.nkmk.me/en/python-dict-list-sort/
-
-
-"""
 
 import string
 import re
