@@ -1,15 +1,4 @@
-"""
 
-Name: Tabitha Weinbrenner
-NetID/PID: Weinbren, 161378611
-Time To Completion: 6  hours
-
-Sources:
-https://datagy.io/python-append-to-tuple/
-https://www.programiz.com/python-programming/online-compiler/ # Used for testing smaller tuple issues for min/max.
-https://www.digitalocean.com/community/tutorials/understanding-tuples-in-python-3
-https://stackoverflow.com/questions/20600154/insert-a-list-into-another-list-without-brackets-and-by-replacing-the-current-i
-"""
 
 import string
 from operator import itemgetter
