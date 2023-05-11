@@ -1,13 +1,4 @@
-"""
 
-Name: Tabitha Weinbrenner
-NetID/PID: Weinbren, 161378611
-Time To Completion: 6  hours
-
-Sources:
-https://docs.python.org/3/library/json.html
-https://stackoverflow.com/questions/9233027/unicodedecodeerror-charmap-codec-cant-decode-byte-x-in-position-y-character
-"""
 import os.path
 import string
 from operator import itemgetter
