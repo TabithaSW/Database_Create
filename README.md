@@ -1,5 +1,5 @@
 # Database_Create
-Working on creating a database system that takes in SQL statements and generates custom database. Returns database as excel file with functions allowing conversion to XML or JSON if needed.
+Working on creating a database management system that takes in SQL statements and generates custom databases, tables, views, e.t.c. Returns database as excel file with functions allowing conversion to XML or JSON if needed.
 
 - Custom database, tables, rows, columns, and views. Structured to allow properties similar, or mimicking, sqlite3 python module.
 
