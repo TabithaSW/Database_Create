@@ -10,8 +10,6 @@ _ALL_DATABASES = {}
 class Connection(object):
     def __init__(self, filename):
         """
-        Takes a filename, but doesn't do anything with it.
-        (The filename will be used in a future project).
         """
         if filename in _ALL_DATABASES:
             self.database = _ALL_DATABASES[filename]
