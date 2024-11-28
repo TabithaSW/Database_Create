@@ -20,11 +20,17 @@ import operator
 from operator import itemgetter
 import copy
 from copy import deepcopy
+import csv
+import os
+from datetime import datetime
+
+
 
 
 """
 Utility Functions For Data Processing/Tokenizing the SQL Statements
 """
+
 class Utility_Functions(object):
     def __init__(self):
         """
@@ -176,6 +182,12 @@ class Utility_Functions(object):
 
 _ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
 
+def connect(filename, timeout=None, isolation_level=None):
+    """
+    Creates a Connection instance for the specified database file.
+    """
+    return Connection(filename)
+
 class Connection(Utility_Functions):
     """
     Represents a connection to a database, allowing SQL statements to be executed and transactions to be managed.
@@ -196,9 +208,11 @@ class Connection(Utility_Functions):
         """
         if filename in _ALL_DATABASES:
             self.database = _ALL_DATABASES[filename]
+            print(f"Registered databases: {_ALL_DATABASES.keys()}")
         else:
             self.database = Database(filename)
             _ALL_DATABASES[filename] = self.database
+            print(f"Registered databases: {_ALL_DATABASES.keys()}")
 
         # you need a way for each connection to know it's identity.
         Connection.counter += 1
@@ -604,19 +618,43 @@ class Connection(Utility_Functions):
                     self.database.shared_lock()
                 return select(tokens)
 
+    def export_to_file(self, table_names, format="csv"):
+        """
+        Exporting the databases selected tables to a csv file.
+        """
+
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        file_name = f"exported_tables_{timestamp}.csv"
+        file_path = os.path.join(desktop, file_name)
+
+        try:
+            with open(file_path, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                for table_name in table_names:
+                    if table_name in self.database.tables:
+                        table = self.database.tables[table_name]
+                        print(f"Exporting table: {table_name}")  # Debugging
+                        print(f"Columns: {table.column_names}")  # Debugging
+                        print(f"Rows: {table.rows}")  # Debugging
+
+                        writer.writerow([f"Table: {table_name}"])
+                        writer.writerow(table.column_names)
+                        for row in table.rows:
+                            writer.writerow([row[col] for col in table.column_names])
+                        writer.writerow([])  # Blank line between tables
+                    else:
+                        print(f"Table '{table_name}' does not exist in the database.")
+            print(f"Tables {table_names} exported successfully to: {file_path}")
+        except Exception as e:
+            print(f"Error exporting tables: {e}")
+
+
     def close(self):
         """
         Placeholder method for closing a connection.
         """
         pass
-
-
-def connect(filename, timeout=None, isolation_level=None):
-    """
-    Creates a Connection instance for the specified database file.
-    """
-    return Connection(filename)
-
 
 class Database(Utility_Functions):
     """
@@ -703,6 +741,7 @@ class Database(Utility_Functions):
             raise Exception("Table Already In Database")
         assert table_name not in self.tables
         self.tables[table_name] = Table(table_name, column_name_type_pairs)
+        print(f"Tables in {self.filename}: {self.tables.keys()}")
         return []
 
     def if_exists(self, table_name, column_name_type_pairs):
@@ -840,7 +879,7 @@ class Database(Utility_Functions):
             return self.tables[table_name].rows
         else:
             print("ENTIRE DATABASE:", self.tables)
-
+ 
 
 class Table(Utility_Functions):
     """
@@ -870,6 +909,9 @@ class Table(Utility_Functions):
         assert len(self.column_names) == len(row_contents)
         row = dict(zip(self.column_names, row_contents))
         self.rows.append(row)
+        print(f"Inserted row into {self.name}: {row_contents}")
+        print(f"Current rows: {self.rows}")
+
 
     def update_table(self, columns, values, where_column, where_vals):
         """
@@ -986,6 +1028,7 @@ def main():
     print("Welcome to the Lightweight DBMS Tester!")
     print("You can test SQL commands interactively or by running an SQL file.")
     print("Type 'exit' to quit the interactive mode.")
+    print("CURRENT DATABASES:",_ALL_DATABASES)
 
     # Prompt for database filename
     db_filename = input("Enter the name of the database file (it will be created if it doesn't exist): ")
@@ -993,7 +1036,8 @@ def main():
 
     while True:
         # Choose between interactive mode and file submission
-        mode = input("\nEnter '1' to type SQL commands or '2' to run commands from a file: ")
+        mode = input("\nEnter '1' to type SQL commands, '2' to run commands from a file, or '3' to export tables: ")
+
 
         if mode == '1':  # Interactive mode
             while True:
@@ -1023,6 +1067,15 @@ def main():
                 print("Error: File not found.")
             except Exception as e:
                 print(f"Error: {e}")
+
+        elif mode == '3':  # Export tables to desktop
+            table_names = input("Enter the table names to export, separated by commas: ").split(",")
+            try:
+                connection.export_to_file([name.strip() for name in table_names])
+            except Exception as e:
+                print(f"Error exporting tables: {e}")
+
+
         else:
             print("Invalid choice. Please enter '1' or '2'.")
 
