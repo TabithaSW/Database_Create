@@ -741,7 +741,7 @@ class Database(Utility_Functions):
             raise Exception("Table Already In Database")
         assert table_name not in self.tables
         self.tables[table_name] = Table(table_name, column_name_type_pairs)
-        print(f"Tables in {self.filename}: {self.tables.keys()}")
+        print(f"Create New Table Test - Tables in Database {self.filename}: {self.tables.keys()}")
         return []
 
     def if_exists(self, table_name, column_name_type_pairs):
@@ -909,7 +909,7 @@ class Table(Utility_Functions):
         assert len(self.column_names) == len(row_contents)
         row = dict(zip(self.column_names, row_contents))
         self.rows.append(row)
-        print(f"Inserted row into {self.name}: {row_contents}")
+        # print(f"Inserted row into {self.name}: {row_contents}")
         print(f"Current rows: {self.rows}")
 
 
