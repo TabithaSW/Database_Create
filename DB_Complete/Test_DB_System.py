@@ -1,5 +1,8 @@
 
-
+"""
+Creates a database management system that takes in SQL commands and has transaction locking support.
+Four Main classes: Connection, Database, Tables, and Utility Functions
+"""
 import string
 import re
 import operator
@@ -10,6 +13,17 @@ from copy import deepcopy
 _ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
 
 class Connection(object):
+    """
+    Represents a connection to a database, allowing SQL statements to be executed and transactions to be managed.
+    
+    Attributes:
+    counter: A class-level counter that uniquely identifies each connection.
+    database: The Database object associated with the connection.
+    id: A unique identifier for the connection, assigned incrementally using the counter.
+    copy: A deep copy of the database, used for transaction management during BEGIN statements.
+    auto_commit: A flag indicating whether changes are committed automatically (default is True).
+
+    """
     counter = 0 # A class-level counter to uniquely identify each connection.
 
     def __init__(self, filename):
@@ -442,7 +456,12 @@ def connect(filename, timeout=None, isolation_level=None):
 
 class Database:
     """
+    Represents the database itself, containing tables and methods to perform various operations.
     
+    Attributes:
+    filename: The name of the database file.
+    tables: A dictionary where table names map to Table objects.
+    s_lock, r_lock, e_lock: Class-level attributes for managing shared, reserved, and exclusive locks.
     """
     #  Class-level variables for shared, reserved, and exclusive locks, used in transaction management.
     s_lock = False
@@ -458,6 +477,10 @@ class Database:
 
     """
     Manage locking mechanisms to enforce transaction isolation and concurrency control.
+    - Acquire different types of locks to enforce transaction isolation.
+    - shared_lock(self), reserved_lock(self), exclusive_lock(self):
+    - unlock_shared(self), unlock_reserved(self), unlock_exclusive(self):
+    
     """
     def shared_lock(self):
         if self.r_lock or self.e_lock:
@@ -499,6 +522,13 @@ class Database:
     def check_zero_locks(self):
         if self.s_lock or self.r_lock or self.e_lock:
             raise Exception("Cannot begin transaction with an open transaction.")
+        
+    """
+    Start of table management functions:
+    - create_new_table(self, table_name, column_name_type_pairs):
+    - if_exists(self, table_name, column_name_type_pairs):
+    - drop(self, table_name):
+    """
 
     def create_new_table(self, table_name, column_name_type_pairs):
         """
@@ -521,6 +551,13 @@ class Database:
             return
         else:
             self.tables[table_name] = Table(table_name, column_name_type_pairs)
+    
+    """
+    Start of row management and query execution.
+    - del_all_rows(self, table_name):
+    - del_where(self, table_name, col_name, operator, constant):
+    - view, insert_into, select, select_where, update
+    """
 
     def del_all_rows(self, table_name):
         """
@@ -627,9 +664,30 @@ class Database:
         table = self.tables[table_name]
         # Check table class for update func.
         return table.update_table(columns, values, where_column, where_vals)
+    
+    def view(self, table_name):
+        """
+        Retrieves and displays all rows from the specified table.
+        """
+        # print("TABLE NAME CHECK:",self.tables[table_name].name)
+        # print("TABLE ROWS CHECK",self.tables[table_name].rows)
+        # print("COLUMNS:", self.tables[table_name].column_names)
+        if len(self.tables) != 0:
+            return self.tables[table_name].rows
+        else:
+            print("ENTIRE DATABASE:", self.tables)
 
 
 class Table:
+    """
+    Represents an individual table in the database, containing rows and column definitions.
+    
+    Attributes:
+    name: The name of the table.
+    column_names: A list of column names in the table.
+    column_types: A list of column data types corresponding to the columns.
+    rows: A list of rows (each row is a dictionary mapping column names to values).
+    """
     def __init__(self, name, column_name_type_pairs):
         """"
         Initializes a table with a name, columns, and an empty row list.
