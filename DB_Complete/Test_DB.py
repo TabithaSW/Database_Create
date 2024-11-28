@@ -1,4 +1,4 @@
-from Test_DB_System import connect
+from Test_DB_System.py import connect
 
 def main():
     # Specify the SQL file containing commands
