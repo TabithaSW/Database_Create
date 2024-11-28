@@ -7,17 +7,14 @@ from operator import itemgetter
 import copy
 from copy import deepcopy
 
-_ALL_DATABASES = {}
-
+_ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
 
 class Connection(object):
-    # Connection ID Counter Global Var:
-    counter = 0
+    counter = 0 # A class-level counter to uniquely identify each connection.
 
     def __init__(self, filename):
         """
-        Takes a filename, but doesn't do anything with it.
-        (The filename will be used in a future project).
+        Initializes a connection, associating it with a database. Creates a new database if the filename is not already in _ALL_DATABASES.
         """
         if filename in _ALL_DATABASES:
             self.database = _ALL_DATABASES[filename]
@@ -35,27 +32,26 @@ class Connection(object):
 
     def execute(self, statement):
         """
-        Takes a SQL statement.
-        Returns a list of tuples (empty unless select statement
-        with rows to return).
+        Takes a SQL statement, processe/tokenizes it, submits commands to the database class.
+        Supports commands like CREATE, INSERT, SELECT, DELETE, UPDATE, DROP, and transaction management (BEGIN, COMMIT, ROLLBACK).
         """
 
         # NEW CREATE INFO: CREATE TABLE IF NOT EXISTS students
         def create_table(tokens):
             """
-            Determines the name and column information from tokens add
-            has the database create a new table within itself.
+            - Handles the CREATE TABLE SQL statement.
+            - Parses table names and columns, and either creates a new table or ensures it exists if IF NOT EXISTS is specified.
             """
-            pop_and_check(tokens, "CREATE")
-            pop_and_check(tokens, "TABLE")
+            Utility_Functions.pop_and_check(tokens, "CREATE")
+            Utility_Functions.pop_and_check(tokens, "TABLE")
 
             # IF NOT EXISTS: (Do not raise an exception if it exists, just do nothing.)
             if tokens[0] == "IF":
-                pop_and_check(tokens, "IF")
-                pop_and_check(tokens, "NOT")
-                pop_and_check(tokens, "EXISTS")
+                Utility_Functions.pop_and_check(tokens, "IF")
+                Utility_Functions.pop_and_check(tokens, "NOT")
+                Utility_Functions.pop_and_check(tokens, "EXISTS")
                 table_name = tokens.pop(0)
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, "(")
                 column_name_type_pairs = []
                 while True:
                     column_name = tokens.pop(0)
@@ -71,7 +67,7 @@ class Connection(object):
             # If IF NOT EXISTS clause not included, raise exception for table that exists already.
             else:
                 table_name = tokens.pop(0)
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, "(")
                 column_name_type_pairs = []
                 while True:
                     column_name = tokens.pop(0)
@@ -86,14 +82,15 @@ class Connection(object):
 
         def drop(tokens):
             """
-            Drops table if requested, if the table exists.
+            Handles the DROP TABLE SQL statement.
+            Deletes a table if it exists or raises an error if it does not.
             """
             # DROP TABLE IF EXISTS students;
-            pop_and_check(tokens, "DROP")
-            pop_and_check(tokens, "TABLE")
+            Utility_Functions.pop_and_check(tokens, "DROP")
+            Utility_Functions.pop_and_check(tokens, "TABLE")
             if tokens[0] == "IF":
-                pop_and_check(tokens, "IF")
-                pop_and_check(tokens, "EXISTS")
+                Utility_Functions.pop_and_check(tokens, "IF")
+                Utility_Functions.pop_and_check(tokens, "EXISTS")
                 table_name = tokens.pop(0)
             # No if exists statement.
             else:
@@ -102,22 +99,23 @@ class Connection(object):
 
         def insert(tokens):
             """
-            Determines the table name and row values to add.
+            Handles the INSERT INTO SQL statement.
+            Adds rows to a specified table, optionally specifying columns to insert into.
             """
-            pop_and_check(tokens, "INSERT")
-            pop_and_check(tokens, "INTO")
+            Utility_Functions.pop_and_check(tokens, "INSERT")
+            Utility_Functions.pop_and_check(tokens, "INTO")
             table_name = tokens.pop(0)
             insert_to_cols = []
 
             # Checking if insert statement has column names before values:
             if tokens[0] == "(":
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, "(")
                 while True:
                     if tokens[0] == ",":
-                        pop_and_check(tokens, ",")
+                        Utility_Functions.pop_and_check(tokens, ",")
                     elif tokens[0] == ")":
                         # If closing bracket, insert?
-                        pop_and_check(tokens, ")")
+                        Utility_Functions.pop_and_check(tokens, ")")
                         break
                     else:
                         # List of Columns to insert to:
@@ -125,8 +123,8 @@ class Connection(object):
                         tokens.pop(0)
 
             # Gathering vals:
-            pop_and_check(tokens, "VALUES")
-            pop_and_check(tokens, "(")
+            Utility_Functions.pop_and_check(tokens, "VALUES")
+            Utility_Functions.pop_and_check(tokens, "(")
             row_contents = []
             while True:
                 item = tokens.pop(0)
@@ -143,8 +141,8 @@ class Connection(object):
             # If the tokens list is not empty after first insert:
             if tokens:
                 # print(tokens)
-                pop_and_check(tokens, ",")
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, ",")
+                Utility_Functions.pop_and_check(tokens, "(")
                 row_next = []
                 while len(tokens) > 0:
                     items = tokens.pop(0)
@@ -160,8 +158,8 @@ class Connection(object):
             # If the tokens list is not empty after first insert:
             if tokens:
                 # print(tokens)
-                pop_and_check(tokens, ",")
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, ",")
+                Utility_Functions.pop_and_check(tokens, "(")
                 row_next = []
                 while len(tokens) > 0:
                     items = tokens.pop(0)
@@ -177,8 +175,8 @@ class Connection(object):
             # If the tokens list is not empty after first insert:
             if tokens:
                 # print(tokens)
-                pop_and_check(tokens, ",")
-                pop_and_check(tokens, "(")
+                Utility_Functions.pop_and_check(tokens, ",")
+                Utility_Functions.pop_and_check(tokens, "(")
                 row_next = []
                 while len(tokens) > 0:
                     items = tokens.pop(0)
@@ -192,11 +190,13 @@ class Connection(object):
                 self.database.insert_into(table_name, row_next)
 
         def update(tokens):
-            # UPDATE student SET grade = 4.0 WHERE name = ’James’;
-            # ['UPDATE', 'student', 'SET', 'grade', '=', 3.0, 'WHERE', 'piazza', '=', 2, ';']
-            pop_and_check(tokens, "UPDATE")
+            """
+            Handles the UPDATE SQL statement.
+            Modifies table rows based on conditions provided in a WHERE clause.
+            """
+            Utility_Functions.pop_and_check(tokens, "UPDATE")
             table_name = tokens.pop(0)
-            pop_and_check(tokens, "SET")
+            Utility_Functions.pop_and_check(tokens, "SET")
             columns = []
             values = []
             while True:
@@ -205,7 +205,7 @@ class Connection(object):
                 # List of the columns to update.
                 columns.append(column_name)
                 # Operator, what are we setting the col to?
-                pop_and_check(tokens, "=")
+                Utility_Functions.pop_and_check(tokens, "=")
                 val = tokens.pop(0)
                 values.append(val)
                 if len(tokens) == 0:
@@ -222,16 +222,20 @@ class Connection(object):
                     assert where == "WHERE"
                     if where == "WHERE":
                         where_column = tokens.pop(0)
-                        pop_and_check(tokens, "=")  # Operator hopefully is always =
+                        Utility_Functions.pop_and_check(tokens, "=")  # Operator hopefully is always =
                         where_vals = tokens.pop(0)
                         # Go to the database function for the update:
                         self.database.update(table_name, columns, values, where_column, where_vals)
                         break
 
         def delete(tokens):
+            """
+            Handles the DELETE SQL statement.
+            Deletes rows from a table, either all rows or specific rows based on a WHERE clause.
+            """
             #  ['DELETE', 'FROM', 'students', 'WHERE', 'id', '>', 4, ';']
-            pop_and_check(tokens, "DELETE")
-            pop_and_check(tokens, "FROM")
+            Utility_Functions.pop_and_check(tokens, "DELETE")
+            Utility_Functions.pop_and_check(tokens, "FROM")
             table_name = tokens.pop(0)
             # IF NO WHERE CLAUSE
             if not tokens:
@@ -239,7 +243,7 @@ class Connection(object):
             # IF IT CONTAINS WHERE CLAUSE:
             else:
                 # WHERE column_name operator value.
-                pop_and_check(tokens, "WHERE")
+                Utility_Functions.pop_and_check(tokens, "WHERE")
                 # WHAT IS BEING DELETED:
                 col_name = tokens.pop(0)
                 operator = tokens.pop(0)
@@ -250,9 +254,10 @@ class Connection(object):
 
         def select(tokens):
             """
-            Determines the table name, output_columns, and order_by_columns.
+            Handles the SELECT SQL statement.
+            Retrieves rows from a table, with optional filtering (WHERE) and ordering (ORDER BY).
             """
-            pop_and_check(tokens, "SELECT")
+            Utility_Functions.pop_and_check(tokens, "SELECT")
             output_columns = []
             while True:
                 col = tokens.pop(0)  # student.name or student.*
@@ -277,7 +282,7 @@ class Connection(object):
             if tokens[0] == "WHERE":
                 order_by_columns = []
                 # Remove WHERE word,
-                pop_and_check(tokens, "WHERE")
+                Utility_Functions.pop_and_check(tokens, "WHERE")
                 # Pull column, operator, and constant
                 where_col = tokens.pop(0)
 
@@ -285,13 +290,13 @@ class Connection(object):
                 operator = tokens.pop(0)
                 # If tokens has ! and then =,
                 if tokens[0] == "=":
-                    pop_and_check(tokens, "=")
+                    Utility_Functions.pop_and_check(tokens, "=")
                     operator = "!="
                     # print(operator)
                 where_value = tokens.pop(0)
                 # Remove order and by:
-                pop_and_check(tokens, "ORDER")
-                pop_and_check(tokens, "BY")
+                Utility_Functions.pop_and_check(tokens, "ORDER")
+                Utility_Functions.pop_and_check(tokens, "BY")
                 # All order by columns work normally!
                 while True:
                     col = tokens.pop(0)
@@ -300,7 +305,7 @@ class Connection(object):
                         parts = col.split(".")
                         order_by_columns.append(parts[1])
                         if tokens[0] == ",":
-                            pop_and_check(tokens, ",")
+                            Utility_Functions.pop_and_check(tokens, ",")
                     else:
                         order_by_columns.append(col)
                     if not tokens:
@@ -312,8 +317,8 @@ class Connection(object):
             # If no where clause, business as usual:
             else:
 
-                pop_and_check(tokens, "ORDER")
-                pop_and_check(tokens, "BY")
+                Utility_Functions.pop_and_check(tokens, "ORDER")
+                Utility_Functions.pop_and_check(tokens, "BY")
                 order_by_columns = []
                 while True:
                     col = tokens.pop(0)
@@ -325,18 +330,18 @@ class Connection(object):
                     # print("ORDER COLUMNS SELECT:",order_by_columns)
                     if not tokens:
                         break
-                    pop_and_check(tokens, ",")
+                    Utility_Functions.pop_and_check(tokens, ",")
                 return self.database.select(
                     output_columns, table_name, order_by_columns)
 
-        tokens = tokenize(statement)
+        tokens = Utility_Functions.tokenize(statement)
         assert tokens[0] in {"CREATE", "INSERT", "SELECT", "DELETE", "UPDATE", "DROP", "BEGIN", "COMMIT", "ROLLBACK"}
         last_semicolon = tokens.pop()
         assert last_semicolon == ";"
 
         # Check for transaction statements
         if tokens[0] == "BEGIN":
-            pop_and_check(tokens, "BEGIN")
+            Utility_Functions.pop_and_check(tokens, "BEGIN")
             self.auto_commit = False  # disable autocommit mode after BEGIN statement!!!
             # Check for transaction mode:
             if tokens[0] == "DEFERRED":
@@ -355,7 +360,7 @@ class Connection(object):
                 if not self.auto_commit:
                     self.database.exclusive_lock()
             else:
-                pop_and_check(tokens, "TRANSACTION")
+                Utility_Functions.pop_and_check(tokens, "TRANSACTION")
                 if not self.auto_commit:
                     self.database.shared_lock()
                 # Work on a copy of the database,
@@ -423,29 +428,37 @@ class Connection(object):
 
     def close(self):
         """
-        Empty method that will be used in future projects
+        Placeholder method for closing a connection.
         """
         pass
 
 
 def connect(filename, timeout=None, isolation_level=None):
     """
-    Creates a Connection object with the given filename
+    Creates a Connection instance for the specified database file.
     """
     return Connection(filename)
 
 
 class Database:
-    # Locks as class variables
+    """
+    
+    """
+    #  Class-level variables for shared, reserved, and exclusive locks, used in transaction management.
     s_lock = False
     r_lock = False
     e_lock = False
 
     def __init__(self, filename):
+        """
+        Initializes a database object with a given filename and an empty table dictionary.
+        """
         self.filename = filename
         self.tables = {}
 
-    # IMPLEMENTING LOCKS FOR TRANSACTION MODES:
+    """
+    Manage locking mechanisms to enforce transaction isolation and concurrency control.
+    """
     def shared_lock(self):
         if self.r_lock or self.e_lock:
             raise Exception("Cannot acquire shared lock when reserved or exclusive lock is held.")
@@ -460,6 +473,10 @@ class Database:
         if self.r_lock or self.e_lock:
             raise Exception("Cannot acquire exclusive lock when reserved or exclusive lock is held.")
         self.e_lock = True
+    
+    """"
+    Release the respective locks.
+    """
 
     def unlock_shared(self):
         self.s_lock = False
@@ -484,6 +501,10 @@ class Database:
             raise Exception("Cannot begin transaction with an open transaction.")
 
     def create_new_table(self, table_name, column_name_type_pairs):
+        """
+        Creates a new table in the database.
+        Is called in the create_table function of the execute func in the connection class after CREATE TABLE statement tokenized/submitted.
+        """
         if table_name in self.tables:
             raise Exception("Table Already In Database")
         assert table_name not in self.tables
@@ -492,7 +513,9 @@ class Database:
 
     def if_exists(self, table_name, column_name_type_pairs):
         """
-        For IF NOT EXISTS statements in Create/Drop.
+        Is called in the create_table function of the execute func in the connection class.
+        For IF NOT EXISTS statements in Create/Drop functions of the execute 
+        Ensures the table exists or creates it if it does not.
         """
         if table_name in self.tables:
             return
@@ -500,18 +523,27 @@ class Database:
             self.tables[table_name] = Table(table_name, column_name_type_pairs)
 
     def del_all_rows(self, table_name):
+        """
+        Deletes all rows from the specified table. 
+        Called in delete func of execute func of connect class.
+        """
         self.tables[table_name].rows.clear()
         return
 
     def drop(self, table_name):
+        """
+        Removes a table from the database.
+        """
         if self.tables[table_name] is not None:
             del self.tables[table_name]
         return
 
     def del_where(self, table_name, col_name, operator, constant):
         """
-        OPERATORS: >, <, =, !=, IS, IS NOT
-
+        Deletes rows matching a condition in the WHERE clause.
+        Called in the delete func of the connection class - execute func.
+        Specific to:
+        - OPERATORS: >, <, =, !=, IS, IS NOT
         """
         # Loop through the list of all rows,
         for dict_ in self.tables[table_name].rows:
@@ -561,32 +593,36 @@ class Database:
                         else:
                             print("ISSUE HERE!")
 
-    def view(self, table_name):
-        # print("TABLE NAME CHECK:",self.tables[table_name].name)
-        # print("TABLE ROWS CHECK",self.tables[table_name].rows)
-        # print("COLUMNS:", self.tables[table_name].column_names)
-        if len(self.tables) != 0:
-            return self.tables[table_name].rows
-        else:
-            print("ENTIRE DATABASE:", self.tables)
 
     def insert_into(self, table_name, row_contents):
+        """
+        Inserts a new row into the specified table.
+        """
         assert table_name in self.tables
         table = self.tables[table_name]
         table.insert_new_row(row_contents)
         return []
 
     def select(self, output_columns, table_name, order_by_columns):
+        """
+        Selects and orders rows based on specified columns.
+        """
         assert table_name in self.tables
         table = self.tables[table_name]
         return table.select_rows(output_columns, order_by_columns)
 
     def select_where(self, output_columns, table_name, order_by_columns, where_col, where_value, operator):
+        """
+        Selects rows that meet a condition and optionally orders them.
+        """
         assert table_name in self.tables
         table = self.tables[table_name]
         return table.select_where_rows(output_columns, order_by_columns, where_col, where_value, operator)
 
     def update(self, table_name, columns, values, where_column=None, where_vals=None):
+        """
+        Updates rows in a table based on specified conditions.
+        """
         assert table_name in self.tables
         table = self.tables[table_name]
         # Check table class for update func.
@@ -595,11 +631,17 @@ class Database:
 
 class Table:
     def __init__(self, name, column_name_type_pairs):
+        """"
+        Initializes a table with a name, columns, and an empty row list.
+        """
         self.name = name
         self.column_names, self.column_types = zip(*column_name_type_pairs)
         self.rows = []
 
     def insert_new_row(self, row_contents):
+        """
+        Adds a new row to the table.
+        """
         # print("COLUMN NAMES in insert_new_row:",self.column_names)
         # print("ROW CONTENTS in insert_new_row:",row_contents)
 
@@ -608,6 +650,9 @@ class Table:
         self.rows.append(row)
 
     def update_table(self, columns, values, where_column, where_vals):
+        """
+        Updates rows in the table matching conditions.
+        """
         # # ['UPDATE', 'student', 'SET', 'grade', '=', 3.0, 'WHERE', 'piazza', '=', 2, ';']
 
         # If update has no where clause,
@@ -634,6 +679,9 @@ class Table:
                                 row_dict[second_col] = values[1]
 
     def select_where_rows(self, output_columns, order_by_columns, where_col, where_val, operator):
+        """
+        Retrieve rows, with optional filtering and ordering.
+        """
         def expand_star_column(output_columns):
             new_output_columns = []
             for col in output_columns:
@@ -681,6 +729,9 @@ class Table:
         return generate_tuples(sorted_rows, expanded_output_columns)
 
     def select_rows(self, output_columns, order_by_columns):
+        """
+        Retrieve rows, with optional filtering and ordering.
+        """
         def expand_star_column(output_columns):
             new_output_columns = []
             for col in output_columns:
@@ -707,120 +758,155 @@ class Table:
         return generate_tuples(sorted_rows, expanded_output_columns)
 
 
-def pop_and_check(tokens, same_as):
-    item = tokens.pop(0)
-    assert item == same_as, "{} != {}".format(item, same_as)
+"""
+Utility Functions For Data Processing/Tokenizing the SQL Statements
+"""
+class Utility_Functions:
+    def __init__(self):
+        """
+        Functions that will be used for tokenizing SQL statements - pulling words and values.
+        """
 
 
-def collect_characters(query, allowed_characters):
-    letters = []
-    for letter in query:
-        if letter not in allowed_characters:
-            break
-        letters.append(letter)
-    return "".join(letters)
+    def pop_and_check(self,tokens, same_as):
+        """
+        Removes and verifies that the next token matches the expected value.
+        """
+        item = tokens.pop(0)
+        assert item == same_as, "{} != {}".format(item, same_as)
 
 
-def remove_leading_whitespace(query, tokens):
-    whitespace = collect_characters(query, string.whitespace)
-    return query[len(whitespace):]
+    def collect_characters(self, query, allowed_characters):
+        """
+        Extracts a substring containing only allowed characters.
+        """
+        letters = []
+        for letter in query:
+            if letter not in allowed_characters:
+                break
+            letters.append(letter)
+        return "".join(letters)
 
 
-def remove_word(query, tokens):
-    # for student.grades or just student.* or student whatever
-    # # UPDATED TO ACCOUNT FOR DOTS IN THE STATEMENT, CASES LIKE student.grades access!
-    word = collect_characters(query,
-                              string.ascii_letters + "_" + string.digits + "." + "*")
-    if word == "NULL":
-        tokens.append(None)
-    elif "." in word:
-        tokens.append(word)
-    elif "*" in word:
-        tokens.append(word)
-    else:
-        tokens.append(word.split(".")[0])
-    return query[len(word):]
+    def remove_leading_whitespace(self,query, tokens):
+        """
+        Strips leading whitespace from the query.
+        """
+        whitespace = self.collect_characters(query, string.whitespace)
+        return query[len(whitespace):]
 
 
-def remove_text(query, tokens):
-    assert query[0] == "'"
-    query = query[1:]
-    end_quote_index = query.find("'")
-    text = query[:end_quote_index]
-    tokens.append(text)
-    query = query[end_quote_index + 1:]
-    return query
+    def remove_word(self,query, tokens):
+        """
+        Extracts a word (e.g., table name or column name) from the query.
+        """
+        # for student.grades or just student.* or student whatever
+        # # UPDATED TO ACCOUNT FOR DOTS IN THE STATEMENT, CASES LIKE student.grades access!
+        word = self.collect_characters(query,
+                                string.ascii_letters + "_" + string.digits + "." + "*")
+        if word == "NULL":
+            tokens.append(None)
+        elif "." in word:
+            tokens.append(word)
+        elif "*" in word:
+            tokens.append(word)
+        else:
+            tokens.append(word.split(".")[0])
+        return query[len(word):]
 
 
-def remove_integer(query, tokens):
-    int_str = collect_characters(query, string.digits)
-    tokens.append(int_str)
-    return query[len(int_str):]
-
-
-def remove_number(query, tokens):
-    query = remove_integer(query, tokens)
-    if query[0] == ".":
-        whole_str = tokens.pop()
+    def remove_text(self,query, tokens):
+        """
+        Extracts text enclosed in single quotes.
+        """
+        assert query[0] == "'"
         query = query[1:]
-        query = remove_integer(query, tokens)
-        frac_str = tokens.pop()
-        float_str = whole_str + "." + frac_str
-        tokens.append(float(float_str))
-    else:
-        int_str = tokens.pop()
-        tokens.append(int(int_str))
-    return query
+        end_quote_index = query.find("'")
+        text = query[:end_quote_index]
+        tokens.append(text)
+        query = query[end_quote_index + 1:]
+        return query
 
 
-def tokenize(query):
-    tokens = []
-    while query:
-        # print("Query:{}".format(query))
-        # print("Tokens: ", tokens)
-        old_query = query
+    def remove_integer(self,query, tokens):
+        """
+        Extracts an integer value from the query.
+        """
+        int_str = self.collect_characters(query, string.digits)
+        tokens.append(int_str)
+        return query[len(int_str):]
 
-        if query[0] in string.whitespace:
-            query = remove_leading_whitespace(query, tokens)
-            continue
 
-        if query[0] in (string.ascii_letters + "_"):
-            query = remove_word(query, tokens)
-            continue
-
-        if query[0] in "(),;*":
-            tokens.append(query[0])
+    def remove_number(self,query, tokens):
+        """
+        Extracts a numeric value (integer or float) from the query.
+        """
+        query = self.remove_integer(query, tokens)
+        if query[0] == ".":
+            whole_str = tokens.pop()
             query = query[1:]
-            continue
+            query = self.remove_integer(query, tokens)
+            frac_str = tokens.pop()
+            float_str = whole_str + "." + frac_str
+            tokens.append(float(float_str))
+        else:
+            int_str = tokens.pop()
+            tokens.append(int(int_str))
+        return query
 
-        # FOR DELETE OPERATOR
-        if query[0] == ">" or query[0] == "<":
-            tokens.append(query[0])
-            query = query[1:]
-            continue
 
-        if query[0] == "=" or query[0] == "!":
-            tokens.append(query[0])
-            query = query[1:]
-            continue
+    def tokenize(self,query):
+        """
+        Splits the SQL query into individual tokens for parsing and execution.
+        Calls the utility functions.
+        """
+        tokens = []
+        while query:
+            # print("Query:{}".format(query))
+            # print("Tokens: ", tokens)
+            old_query = query
 
-        # NEED TO COVER: >, <, =, !=, IS NOT, IS.
+            if query[0] in string.whitespace:
+                query = self.remove_leading_whitespace(query, tokens)
+                continue
 
-        if query[0] == "'":
-            query = remove_text(query, tokens)
-            continue
+            if query[0] in (string.ascii_letters + "_"):
+                query = self.remove_word(query, tokens)
+                continue
 
-        if query[0] in (string.ascii_letters + "."):
-            tokens.append(query[0])
-            print(query[0])
+            if query[0] in "(),;*":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
 
-        if query[0] in string.digits:
-            query = remove_number(query, tokens)
-            continue
+            # FOR DELETE OPERATOR
+            if query[0] == ">" or query[0] == "<":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
 
-        if len(query) == len(old_query):
-            print(query[0])
-            raise AssertionError("Query didn't get shorter.")
+            if query[0] == "=" or query[0] == "!":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
 
-    return tokens
+            # NEED TO COVER: >, <, =, !=, IS NOT, IS.
+
+            if query[0] == "'":
+                query = self.remove_text(query, tokens)
+                continue
+
+            if query[0] in (string.ascii_letters + "."):
+                tokens.append(query[0])
+                print(query[0])
+
+            if query[0] in string.digits:
+                query = self.remove_number(query, tokens)
+                continue
+
+            if len(query) == len(old_query):
+                print(query[0])
+                raise AssertionError("Query didn't get shorter.")
+
+        return tokens
 
