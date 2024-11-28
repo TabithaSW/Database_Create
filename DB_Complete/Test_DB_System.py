@@ -2,6 +2,17 @@
 """
 Creates a database management system that takes in SQL commands and has transaction locking support.
 Four Main classes: Connection, Database, Tables, and Utility Functions
+
+- Connection: Manages database connections and provides methods to execute SQL-like commands. It handles tokenizing the SQL statements and forwarding them to the appropriate functions.
+- Database: Represents the database, holding tables and their data. It also manages lock states and provides methods to modify the database structure and content.
+- Table: Represents a table with column definitions and rows. It contains methods to insert, update, delete, and retrieve rows.
+- Utility_Functions: provides methods to tokenize SQL queries into manageable parts, identifying commands, operators, and values for further processing.
+
+
+Supports three lock types:
+- Shared Lock: Allows multiple reads but no writes.
+- Reserved Lock: Ensures no new transactions start but allows completing ongoing ones.
+- Exclusive Lock: Prevents all other operations on the database
 """
 import string
 import re
@@ -10,9 +21,162 @@ from operator import itemgetter
 import copy
 from copy import deepcopy
 
+
+"""
+Utility Functions For Data Processing/Tokenizing the SQL Statements
+"""
+class Utility_Functions(object):
+    def __init__(self):
+        """
+        Functions that will be used for tokenizing SQL statements - pulling words and values.
+        """
+
+    @staticmethod
+    def pop_and_check(tokens, same_as):
+        """
+        Removes and verifies that the next token matches the expected value.
+        """
+        item = tokens.pop(0)
+        assert item == same_as, "{} != {}".format(item, same_as)
+
+    @staticmethod
+    def collect_characters(query, allowed_characters):
+        """
+        Extracts a substring containing only allowed characters.
+        """
+        letters = []
+        for letter in query:
+            if letter not in allowed_characters:
+                break
+            letters.append(letter)
+        return "".join(letters)
+
+    @staticmethod
+    def remove_leading_whitespace(query, tokens):
+        """
+        Strips leading whitespace from the query.
+        """
+        whitespace = Utility_Functions.collect_characters(query, string.whitespace)
+        return query[len(whitespace):]
+
+    @staticmethod
+    def remove_word(query, tokens):
+        """
+        Extracts a word (e.g., table name or column name) from the query.
+        """
+        # for student.grades or just student.* or student whatever
+        # # UPDATED TO ACCOUNT FOR DOTS IN THE STATEMENT, CASES LIKE student.grades access!
+        word = Utility_Functions.collect_characters(query,
+                                string.ascii_letters + "_" + string.digits + "." + "*")
+        if word == "NULL":
+            tokens.append(None)
+        elif "." in word:
+            tokens.append(word)
+        elif "*" in word:
+            tokens.append(word)
+        else:
+            tokens.append(word.split(".")[0])
+        return query[len(word):]
+
+    @staticmethod
+    def remove_text(query, tokens):
+        """
+        Extracts text enclosed in single quotes.
+        """
+        assert query[0] == "'"
+        query = query[1:]
+        end_quote_index = query.find("'")
+        text = query[:end_quote_index]
+        tokens.append(text)
+        query = query[end_quote_index + 1:]
+        return query
+
+    @staticmethod
+    def remove_integer(query, tokens):
+        """
+        Extracts an integer value from the query.
+        """
+        int_str = Utility_Functions.collect_characters(query, string.digits)
+        tokens.append(int_str)
+        return query[len(int_str):]
+
+    @staticmethod
+    def remove_number(query, tokens):
+        """
+        Extracts a numeric value (integer or float) from the query.
+        """
+        query = Utility_Functions.remove_integer(query, tokens)
+        if query[0] == ".":
+            whole_str = tokens.pop()
+            query = query[1:]
+            query = Utility_Functions.remove_integer(query, tokens)
+            frac_str = tokens.pop()
+            float_str = whole_str + "." + frac_str
+            tokens.append(float(float_str))
+        else:
+            int_str = tokens.pop()
+            tokens.append(int(int_str))
+        return query
+
+    @staticmethod
+    def tokenize(query):
+        """
+        Splits the SQL query into individual tokens for parsing and execution.
+        Calls the utility functions.
+        """
+        tokens = []
+        while query:
+            # print("Query:{}".format(query))
+            # print("Tokens: ", tokens)
+            old_query = query
+
+            if query[0] in string.whitespace:
+                query = Utility_Functions.remove_leading_whitespace(query, tokens)
+                continue
+
+            if query[0] in (string.ascii_letters + "_"):
+                query = Utility_Functions.remove_word(query, tokens)
+                continue
+
+            if query[0] in "(),;*":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
+
+            # FOR DELETE OPERATOR
+            if query[0] == ">" or query[0] == "<":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
+
+            if query[0] == "=" or query[0] == "!":
+                tokens.append(query[0])
+                query = query[1:]
+                continue
+
+            # NEED TO COVER: >, <, =, !=, IS NOT, IS.
+
+            if query[0] == "'":
+                query = Utility_Functions.remove_text(query, tokens)
+                continue
+
+            if query[0] in (string.ascii_letters + "."):
+                tokens.append(query[0])
+                print(query[0])
+
+            if query[0] in string.digits:
+                query = Utility_Functions.remove_number(query, tokens)
+                continue
+
+            if len(query) == len(old_query):
+                print(query[0])
+                raise AssertionError("Query didn't get shorter.")
+
+        return tokens
+
 _ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
 
-class Connection(object):
+class Connection(Utility_Functions):
     """
     Represents a connection to a database, allowing SQL statements to be executed and transactions to be managed.
     
@@ -454,7 +618,7 @@ def connect(filename, timeout=None, isolation_level=None):
     return Connection(filename)
 
 
-class Database:
+class Database(Utility_Functions):
     """
     Represents the database itself, containing tables and methods to perform various operations.
     
@@ -678,7 +842,7 @@ class Database:
             print("ENTIRE DATABASE:", self.tables)
 
 
-class Table:
+class Table(Utility_Functions):
     """
     Represents an individual table in the database, containing rows and column definitions.
     
@@ -815,156 +979,52 @@ class Table:
         sorted_rows = sort_rows(order_by_columns)
         return generate_tuples(sorted_rows, expanded_output_columns)
 
-
 """
-Utility Functions For Data Processing/Tokenizing the SQL Statements
+Testing the database management system.
 """
-class Utility_Functions:
-    def __init__(self):
-        """
-        Functions that will be used for tokenizing SQL statements - pulling words and values.
-        """
+def main():
+    print("Welcome to the Lightweight DBMS Tester!")
+    print("You can test SQL commands interactively or by running an SQL file.")
+    print("Type 'exit' to quit the interactive mode.")
 
+    # Prompt for database filename
+    db_filename = input("Enter the name of the database file (it will be created if it doesn't exist): ")
+    connection = connect(db_filename)
 
-    def pop_and_check(self,tokens, same_as):
-        """
-        Removes and verifies that the next token matches the expected value.
-        """
-        item = tokens.pop(0)
-        assert item == same_as, "{} != {}".format(item, same_as)
+    while True:
+        # Choose between interactive mode and file submission
+        mode = input("\nEnter '1' to type SQL commands or '2' to run commands from a file: ")
 
+        if mode == '1':  # Interactive mode
+            while True:
+                statement = input("Enter an SQL statement (or type 'exit' to quit): ")
+                if statement.lower() == 'exit':
+                    break
+                try:
+                    result = connection.execute(statement)
+                    if result:
+                        print("Result:", list(result))
+                except Exception as e:
+                    print(f"Error: {e}")
 
-    def collect_characters(self, query, allowed_characters):
-        """
-        Extracts a substring containing only allowed characters.
-        """
-        letters = []
-        for letter in query:
-            if letter not in allowed_characters:
-                break
-            letters.append(letter)
-        return "".join(letters)
-
-
-    def remove_leading_whitespace(self,query, tokens):
-        """
-        Strips leading whitespace from the query.
-        """
-        whitespace = self.collect_characters(query, string.whitespace)
-        return query[len(whitespace):]
-
-
-    def remove_word(self,query, tokens):
-        """
-        Extracts a word (e.g., table name or column name) from the query.
-        """
-        # for student.grades or just student.* or student whatever
-        # # UPDATED TO ACCOUNT FOR DOTS IN THE STATEMENT, CASES LIKE student.grades access!
-        word = self.collect_characters(query,
-                                string.ascii_letters + "_" + string.digits + "." + "*")
-        if word == "NULL":
-            tokens.append(None)
-        elif "." in word:
-            tokens.append(word)
-        elif "*" in word:
-            tokens.append(word)
+        elif mode == '2':  # File submission mode
+            file_path = input("Enter the path to the SQL file: ")
+            try:
+                with open(file_path, 'r') as sql_file:
+                    commands = sql_file.read().split(';')  # Split commands by semicolons
+                    for command in commands:
+                        command = command.strip()
+                        if command:  # Skip empty commands
+                            print(f"Executing: {command}")
+                            result = connection.execute(command + ';')  # Add back semicolon
+                            if result:
+                                print("Result:", list(result))
+            except FileNotFoundError:
+                print("Error: File not found.")
+            except Exception as e:
+                print(f"Error: {e}")
         else:
-            tokens.append(word.split(".")[0])
-        return query[len(word):]
+            print("Invalid choice. Please enter '1' or '2'.")
 
-
-    def remove_text(self,query, tokens):
-        """
-        Extracts text enclosed in single quotes.
-        """
-        assert query[0] == "'"
-        query = query[1:]
-        end_quote_index = query.find("'")
-        text = query[:end_quote_index]
-        tokens.append(text)
-        query = query[end_quote_index + 1:]
-        return query
-
-
-    def remove_integer(self,query, tokens):
-        """
-        Extracts an integer value from the query.
-        """
-        int_str = self.collect_characters(query, string.digits)
-        tokens.append(int_str)
-        return query[len(int_str):]
-
-
-    def remove_number(self,query, tokens):
-        """
-        Extracts a numeric value (integer or float) from the query.
-        """
-        query = self.remove_integer(query, tokens)
-        if query[0] == ".":
-            whole_str = tokens.pop()
-            query = query[1:]
-            query = self.remove_integer(query, tokens)
-            frac_str = tokens.pop()
-            float_str = whole_str + "." + frac_str
-            tokens.append(float(float_str))
-        else:
-            int_str = tokens.pop()
-            tokens.append(int(int_str))
-        return query
-
-
-    def tokenize(self,query):
-        """
-        Splits the SQL query into individual tokens for parsing and execution.
-        Calls the utility functions.
-        """
-        tokens = []
-        while query:
-            # print("Query:{}".format(query))
-            # print("Tokens: ", tokens)
-            old_query = query
-
-            if query[0] in string.whitespace:
-                query = self.remove_leading_whitespace(query, tokens)
-                continue
-
-            if query[0] in (string.ascii_letters + "_"):
-                query = self.remove_word(query, tokens)
-                continue
-
-            if query[0] in "(),;*":
-                tokens.append(query[0])
-                query = query[1:]
-                continue
-
-            # FOR DELETE OPERATOR
-            if query[0] == ">" or query[0] == "<":
-                tokens.append(query[0])
-                query = query[1:]
-                continue
-
-            if query[0] == "=" or query[0] == "!":
-                tokens.append(query[0])
-                query = query[1:]
-                continue
-
-            # NEED TO COVER: >, <, =, !=, IS NOT, IS.
-
-            if query[0] == "'":
-                query = self.remove_text(query, tokens)
-                continue
-
-            if query[0] in (string.ascii_letters + "."):
-                tokens.append(query[0])
-                print(query[0])
-
-            if query[0] in string.digits:
-                query = self.remove_number(query, tokens)
-                continue
-
-            if len(query) == len(old_query):
-                print(query[0])
-                raise AssertionError("Query didn't get shorter.")
-
-        return tokens
-
+if __name__ == "__main__":
+    main()
