@@ -1,4 +1,4 @@
-from Current_DB_NoLocks.py import connect
+from Test_DB_System import connect
 
 def main():
     # Specify the SQL file containing commands
