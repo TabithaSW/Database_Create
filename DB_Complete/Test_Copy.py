@@ -8,6 +8,7 @@ from copy import deepcopy
 import csv
 import os
 from datetime import datetime
+import json
 
 
 class Utility_Functions(object):
@@ -454,6 +455,11 @@ class Connection(Utility_Functions):
         """
 
         tokens = Utility_Functions.tokenize(statement)
+        if isinstance(tokens[0],int):
+            print("This is a connection based statement. What # Connection?",tokens[0])
+            tokens.pop(0)
+            Utility_Functions.pop_and_check(tokens=tokens,same_as=":") # If it starts with an integer based connection, after int, always semicolon.
+        
         assert tokens[0] in {"CREATE", "INSERT", "SELECT", "DELETE", "UPDATE", "DROP", "BEGIN", "COMMIT", "ROLLBACK"}
         last_semicolon = tokens.pop()
         assert last_semicolon == ";"
@@ -546,43 +552,19 @@ class Connection(Utility_Functions):
                     self.database.shared_lock()
                 return select(tokens)
 
-    def export_to_file(self, table_names, format="csv"):
-        """
-        Exporting the databases selected tables to a csv file.
-        """
-
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"exported_tables_{timestamp}.csv"
-        file_path = os.path.join(desktop, file_name)
-
-        try:
-            with open(file_path, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                for table_name in table_names:
-                    if table_name in self.database.tables:
-                        table = self.database.tables[table_name]
-                        print(f"Exporting table: {table_name}")  # Debugging
-                        print(f"Columns: {table.column_names}")  # Debugging
-                        print(f"Rows: {table.rows}")  # Debugging
-
-                        writer.writerow([f"Table: {table_name}"])
-                        writer.writerow(table.column_names)
-                        for row in table.rows:
-                            writer.writerow([row[col] for col in table.column_names])
-                        writer.writerow([])  # Blank line between tables
-                    else:
-                        print(f"Table '{table_name}' does not exist in the database.")
-            print(f"Tables {table_names} exported successfully to: {file_path}")
-        except Exception as e:
-            print(f"Error exporting tables: {e}")
-
 
     def close(self):
-        """
-        Placeholder method for closing a connection.
-        """
-        pass
+        #print("CLOSE ALL TEST", _ALL_DATABASES)
+
+        # write the database contents into disk by filename, used json here.
+        temp_dict = {}
+        with open(self.database.filename, "w") as file:
+            for tb in self.database.tables:
+                temp_tb = self.database.tables[tb]
+                # extract rows, use json dump
+                temp_dict[tb] = temp_tb.rows
+            file.write(json.dumps(temp_dict))
+            return
 
 class Database(Utility_Functions):
     """
@@ -965,3 +947,5 @@ with open(file_path, 'r') as sql_file:
             result = Connection.execute(command + ';')  # Add back semicolon
             if result:
                 print("Result:", list(result))
+
+Connection.close()

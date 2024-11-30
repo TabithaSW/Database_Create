@@ -22,6 +22,7 @@ from copy import deepcopy
 import csv
 import os
 from datetime import datetime
+import json
 
 class Utility_Functions(object):
     def __init__(self):
@@ -466,7 +467,13 @@ class Connection(Utility_Functions):
         THEN WE CHOOSE WHICH LOCK AND CONNECTION FUNC TO SEND IT TO!
         """
 
+
         tokens = Utility_Functions.tokenize(statement)
+        if isinstance(tokens[0],int):
+            print("This is a connection based statement. What # Connection?",tokens[0])
+            tokens.pop(0)
+            Utility_Functions.pop_and_check(tokens=tokens,same_as=":") # If it starts with an integer based connection, after int, always semicolon.
+
         assert tokens[0] in {"CREATE", "INSERT", "SELECT", "DELETE", "UPDATE", "DROP", "BEGIN", "COMMIT", "ROLLBACK"}
         last_semicolon = tokens.pop()
         assert last_semicolon == ";"
@@ -558,44 +565,19 @@ class Connection(Utility_Functions):
                 if not self.auto_commit:
                     self.database.shared_lock()
                 return select(tokens)
-
-    def export_to_file(self, table_names, format="csv"):
-        """
-        Exporting the databases selected tables to a csv file.
-        """
-
-        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"exported_tables_{timestamp}.csv"
-        file_path = os.path.join(desktop, file_name)
-
-        try:
-            with open(file_path, mode='w', newline='', encoding='utf-8') as file:
-                writer = csv.writer(file)
-                for table_name in table_names:
-                    if table_name in self.database.tables:
-                        table = self.database.tables[table_name]
-                        print(f"Exporting table: {table_name}")  # Debugging
-                        print(f"Columns: {table.column_names}")  # Debugging
-                        print(f"Rows: {table.rows}")  # Debugging
-
-                        writer.writerow([f"Table: {table_name}"])
-                        writer.writerow(table.column_names)
-                        for row in table.rows:
-                            writer.writerow([row[col] for col in table.column_names])
-                        writer.writerow([])  # Blank line between tables
-                    else:
-                        print(f"Table '{table_name}' does not exist in the database.")
-            print(f"Tables {table_names} exported successfully to: {file_path}")
-        except Exception as e:
-            print(f"Error exporting tables: {e}")
-
+            
 
     def close(self):
-        """
-        Placeholder method for closing a connection.
-        """
-        pass
+        print("CLOSE ALL TEST", _ALL_DATABASES.keys())
+        # write the database contents into disk by filename, used json here.
+        temp_dict = {}
+        with open(self.database.filename, "w") as file:
+            for tb in self.database.tables:
+                temp_tb = self.database.tables[tb]
+                # extract rows, use json dump
+                temp_dict[tb] = temp_tb.rows
+            file.write(json.dumps(temp_dict))
+            return
 
 class Database(Utility_Functions):
     """
@@ -969,56 +951,59 @@ def main():
     print("Welcome to the Lightweight DBMS Tester!")
     print("You can test SQL commands interactively or by running an SQL file.")
     print("Type 'exit' to quit the interactive mode.")
-    print("CURRENT DATABASES:",_ALL_DATABASES)
+    print("CURRENT DATABASES:", _ALL_DATABASES)
 
     # Prompt for database filename
     db_filename = input("Enter the name of the database file (it will be created if it doesn't exist): ")
     connection = connect(db_filename)
 
-    while True:
-        # Choose between interactive mode and file submission
-        mode = input("\nEnter '1' to type SQL commands, '2' to run commands from a file, or '3' to export tables: ")
+    try:
+        while True:
+            # Choose between interactive mode and file submission
+            mode = input("\nEnter '1' to type SQL commands, '2' to run commands from a file, or 'exit' to quit: ")
 
+            if mode == '1':  # Interactive mode
+                while True:
+                    statement = input("Enter an SQL statement (or type 'exit' to quit): ")
+                    if statement.lower() == 'exit':
+                        break
+                    try:
+                        result = connection.execute(statement)
+                        if result:
+                            print("Result:", list(result))
+                    except Exception as e:
+                        print(f"Error: {e}")
 
-        if mode == '1':  # Interactive mode
-            while True:
-                statement = input("Enter an SQL statement (or type 'exit' to quit): ")
-                if statement.lower() == 'exit':
-                    break
+            elif mode == '2':  # File submission mode
+                file_path = input("Enter the path to the SQL file: ")
                 try:
-                    result = connection.execute(statement)
-                    if result:
-                        print("Result:", list(result))
+                    with open(file_path, 'r') as sql_file:
+                        commands = sql_file.read().split(';')  # Split commands by semicolons
+                        for command in commands:
+                            command = command.strip()
+                            if command:  # Skip empty commands
+                                print(f"Executing: {command}")
+                                result = connection.execute(command + ';')  # Add back semicolon
+                                if result:
+                                    print("Result:", list(result))
+                except FileNotFoundError:
+                    print("Error: File not found.")
                 except Exception as e:
                     print(f"Error: {e}")
 
-        elif mode == '2':  # File submission mode
-            file_path = input("Enter the path to the SQL file: ")
-            try:
-                with open(file_path, 'r') as sql_file:
-                    commands = sql_file.read().split(';')  # Split commands by semicolons
-                    for command in commands:
-                        command = command.strip()
-                        if command:  # Skip empty commands
-                            print(f"Executing: {command}")
-                            result = connection.execute(command + ';')  # Add back semicolon
-                            if result:
-                                print("Result:", list(result))
-            except FileNotFoundError:
-                print("Error: File not found.")
-            except Exception as e:
-                print(f"Error: {e}")
+            elif mode.lower() == 'exit':  # Exit the program
+                break
 
-        elif mode == '3':  # Export tables to desktop
-            table_names = input("Enter the table names to export, separated by commas: ").split(",")
-            try:
-                connection.export_to_file([name.strip() for name in table_names])
-            except Exception as e:
-                print(f"Error exporting tables: {e}")
-
-
-        else:
-            print("Invalid choice. Please enter '1' or '2'.")
+            else:
+                print("Invalid choice. Please enter '1', '2', or 'exit'.")
+    finally:
+        # Ensure the close function is called when the program exits
+        print("Closing the database connection...")
+        try:
+            connection.close()  # Close the connection and handle cleanup
+            print(f"Database successfully closed: {db_filename}")
+        except Exception as e:
+            print(f"Error during close operation: {e}")
 
 if __name__ == "__main__":
     main()
