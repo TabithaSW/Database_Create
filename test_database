@@ -1,1 +1,1 @@
-{"student": [{"name": "James", "grade": 4.0, "piazza": 1}]}
+{"foods": [{"name": "Carrot", "is_good": 1, "cost": 4.5}, {"name": "Curry", "is_good": 1, "cost": 11.4}, {"name": "Melon", "is_good": 0, "cost": 0.54}, {"name": "Turnip", "is_good": 0, "cost": 645.0}, {"name": "Cake", "is_good": 1, "cost": 56.2}]}
