@@ -1,78 +1,97 @@
 /* General Styles */
+/* These styles apply to the entire body of the page */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-    margin: 0;
-    padding: 0;
-    color: #333;
+    font-family: Arial, sans-serif; /* Sets a clean, sans-serif font for all text */
+    background-color: #f8f9fa; /* Sets a light gray background color for the page */
+    margin: 0; /* Removes default margin around the body */
+    padding: 0; /* Removes default padding around the body */
+    color: #333; /* Sets the default text color to a dark gray */
 }
 
+/* Header Styles */
+/* Styles the header section at the top of the page */
 header {
-    background-color: #007bff;
-    color: white;
-    padding: 20px;
-    text-align: center;
-    border-bottom: 5px solid #0056b3;
+    background-color: #007bff; /* Sets a blue background for the header */
+    color: white; /* Makes the text color white for contrast */
+    padding: 20px; /* Adds spacing inside the header for breathing room */
+    text-align: center; /* Centers the header text */
+    border-bottom: 5px solid #0056b3; /* Adds a darker blue border at the bottom of the header */
 }
 
+/* Optional logo styling for the header */
+/* If a logo is added, this controls its size and spacing */
 header .logo {
-    height: 50px;
-    margin-bottom: 10px;
+    height: 50px; /* Sets the height of the logo image */
+    margin-bottom: 10px; /* Adds spacing below the logo */
 }
 
+/* Main Layout Styles */
+/* Defines the layout for the main content area */
 main {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px;
+    display: flex; /* Enables a flexbox layout to arrange child elements */
+    justify-content: space-between; /* Places child elements with space between them */
+    margin: 20px; /* Adds space around the main content */
 }
 
+/* Query Box Styles */
+/* Styles the query input box on the left side of the page */
 #query-box {
-    width: 40%;
-    display: flex;
-    flex-direction: column;
-    background-color: #ffffff;
-    padding: 20px;
-    border: 2px solid #dee2e6;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 40%; /* Sets the width of the query box to 40% of the main content area */
+    display: flex; /* Enables a flexbox layout for its child elements */
+    flex-direction: column; /* Aligns child elements vertically */
+    background-color: #ffffff; /* Sets a white background for the box */
+    padding: 20px; /* Adds internal padding inside the box */
+    border: 2px solid #dee2e6; /* Adds a light gray border around the box */
+    border-radius: 5px; /* Rounds the corners of the box slightly */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for a 3D effect */
 }
 
+/* Data Box Styles */
+/* Styles the data output box on the right side of the page */
 #data-box {
-    width: 55%;
-    background-color: #ffffff;
-    padding: 20px;
-    border: 2px solid #dee2e6;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 55%; /* Sets the width of the data box to 55% of the main content area */
+    background-color: #ffffff; /* Sets a white background for the box */
+    padding: 20px; /* Adds internal padding inside the box */
+    border: 2px solid #dee2e6; /* Adds a light gray border around the box */
+    border-radius: 5px; /* Rounds the corners of the box slightly */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Adds a subtle shadow for a 3D effect */
 }
 
+/* Textarea Styles */
+/* Styles the text input area where SQL queries are entered */
 textarea {
-    width: 100%;
-    height: 200px;
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    width: 100%; /* Makes the textarea span the full width of its parent container */
+    height: 200px; /* Sets a fixed height for the textarea */
+    margin-bottom: 10px; /* Adds spacing below the textarea */
+    padding: 10px; /* Adds internal spacing inside the textarea */
+    border: 1px solid #ccc; /* Adds a light gray border around the textarea */
+    border-radius: 5px; /* Rounds the corners of the textarea */
 }
 
+/* Button Styles */
+/* Styles the buttons for submitting queries and closing the database */
 button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
+    background-color: #007bff; /* Sets the button background color to blue */
+    color: white; /* Makes the button text white for contrast */
+    border: none; /* Removes the default button border */
+    padding: 10px 20px; /* Adds internal padding inside the button */
+    border-radius: 5px; /* Rounds the corners of the button */
+    cursor: pointer; /* Changes the cursor to a pointer when hovering */
+    font-size: 16px; /* Sets the font size of the button text */
 }
 
+/* Hover Effect for Buttons */
+/* Changes the button appearance when the user hovers over it */
 button:hover {
-    background-color: #0056b3;
+    background-color: #0056b3; /* Darkens the button background color on hover */
 }
 
+/* Footer Styles */
+/* Styles the footer at the bottom of the page */
 footer {
-    text-align: center;
-    padding: 10px;
-    background-color: #f1f1f1;
-    border-top: 2px solid #dee2e6;
-    margin-top: 20px;
+    text-align: center; /* Centers the footer text */
+    padding: 10px; /* Adds spacing inside the footer */
+    background-color: #f1f1f1; /* Sets a light gray background for the footer */
+    border-top: 2px solid #dee2e6; /* Adds a light gray border at the top of the footer */
+    margin-top: 20px; /* Adds spacing above the footer */
 }
