@@ -39,7 +39,7 @@ def execute_query():
                 if result:  # Append the result if any
                     results.append(list(result))
 
-        return jsonify({'success': True, 'result': results if results else "All statements executed successfully"})
+        return jsonify({'success': True, 'result': results if results else "All statements executed successfully. Run SELECT to view contents."})
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
