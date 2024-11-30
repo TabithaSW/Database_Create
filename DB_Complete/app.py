@@ -1,11 +1,14 @@
 from flask import Flask, render_template, request, jsonify
 from Database_Create import connect  # Import your DBMS implementation
 import os
+print("Templates folder:", os.path.join(os.path.dirname(__file__), "Database_Create/DB_Complete/templates"))
+
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(os.path.dirname(__file__), "Database_Create/templates"),
+    template_folder=os.path.join(os.path.dirname(__file__), "templates"),
 )
+
 db_filename = "my_database.json"  # Default database file
 connection = connect(db_filename)  # Connect to your DBMS
 
@@ -17,16 +20,27 @@ def index():
     """
     return render_template('index.html')
 
-
 @app.route('/execute', methods=['POST'])
 def execute_query():
     """
-    Executes an SQL query submitted by the user.
+    Executes an SQL query or multiple SQL statements submitted by the user.
     """
     query = request.form.get('query')
+
     try:
-        result = connection.execute(query)
-        return jsonify({'success': True, 'result': list(result) if result else "Query executed successfully"})
+        # Split the input query into individual SQL statements
+        statements = query.split(';')  # Split by semicolon
+        results = []
+
+        for statement in statements:
+            statement = statement.strip()  # Remove extra whitespace
+            if statement:  # Skip empty statements
+                result = connection.execute(statement + ';')  # Add back the semicolon
+                if result:  # Append the result if any
+                    results.append(list(result))
+
+        return jsonify({'success': True, 'result': results if results else "All statements executed successfully"})
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
