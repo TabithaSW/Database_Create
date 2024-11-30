@@ -1,7 +1,11 @@
 from flask import Flask, render_template, request, jsonify
-from your_dbms_file import connect  # Import your DBMS implementation
+from Database_Create import connect  # Import your DBMS implementation
+import os
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder=os.path.join(os.path.dirname(__file__), "Database_Create/templates"),
+)
 db_filename = "my_database.json"  # Default database file
 connection = connect(db_filename)  # Connect to your DBMS
 
