@@ -1,8 +1,15 @@
 from flask import Flask, render_template, request, jsonify
 from Database_Create import connect  # Import your DBMS implementation
 import os
-print("Templates folder:", os.path.join(os.path.dirname(__file__), "Database_Create/DB_Complete/templates"))
 
+"""
+Flask (app.py) handles requests and routes.
+- Flask is like the "server" or "manager" that decides what happens when you visit your website or click a button.
+HTML (index.html) creates the structure.
+- HTML is like the "skeleton" of your webpage. It defines what elements are visible
+- JavaScript (in index.html) makes it interactive.
+CSS makes it look pretty, styles the HTML sheet.
+"""
 
 app = Flask(
     __name__,
@@ -19,6 +26,8 @@ def index():
     Renders the main HTML page.
     """
     return render_template('index.html')
+# The render_template('index.html') in app.py sends the index.html file to the browser so I can see it.
+
 
 @app.route('/execute', methods=['POST'])
 def execute_query():
