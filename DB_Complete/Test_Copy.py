@@ -108,12 +108,9 @@ class Utility_Functions(object):
         Calls the utility functions.
         """
         tokens = []
-        print("ORIGINAL QUERY INPUT",query)
         while query:
-            # print("Query:{}".format(query)) # Should decrease until query is empty.
-            # print("Tokens: ", tokens) # SHould increase until query is empty.
-            # Example: CREATE TABLE student (name TEXT, grade REAL, id INTEGER);
-            # Tokens:  ['CREATE', 'TABLE', 'student', '(', 'name', 'TEXT', ',', 'grade', 'REAL', ',', 'id', 'INTEGER', ')']
+            # print("Query:{}".format(query))
+            # print("Tokens: ", tokens)
             old_query = query
 
             if query[0] in string.whitespace:
@@ -157,9 +154,9 @@ class Utility_Functions(object):
             if len(query) == len(old_query):
                 print(query[0])
                 raise AssertionError("Query didn't get shorter.")
+        print("ORIGINAL QUERY INPUT",query)
         print("FINAL TOKENS: ", tokens)
         return tokens
-    
 
 _ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
 
@@ -191,7 +188,8 @@ class Connection(Utility_Functions):
             self.database = _ALL_DATABASES[filename]
             print(f"Registered databases: {_ALL_DATABASES.keys()}")
         else:
-            _ALL_DATABASES[filename] = filename
+            self.database = Database(filename)
+            _ALL_DATABASES[filename] = self.database
             print(f"Registered databases: {_ALL_DATABASES.keys()}")
 
         # need a way for each connection to know it's identity.
@@ -234,10 +232,9 @@ class Connection(Utility_Functions):
                     if comma_or_close == ")":
                         break
                     assert comma_or_close == ','
-                print("THIS IS WHERE WE WOULD RUN CREATE NEW TABLE, HERE IS TABLE NAME",table_name)
-                # self.database.if_exists(table_name, column_name_type_pairs)
+                self.database.if_exists(table_name, column_name_type_pairs)
 
-            # IF NOT EXISTS clause not included, raise exception for table that exists already.
+            # If IF NOT EXISTS clause not included, raise exception for table that exists already.
             else:
                 table_name = tokens.pop(0)
                 Utility_Functions.pop_and_check(tokens, "(")
@@ -251,8 +248,7 @@ class Connection(Utility_Functions):
                     if comma_or_close == ")":
                         break
                     assert comma_or_close == ','
-                print("THIS IS WHERE WE WOULD RUN CREATE NEW TABLE, HERE IS TABLE NAME",table_name)
-                # self.database.create_new_table(table_name, column_name_type_pairs)
+                self.database.create_new_table(table_name, column_name_type_pairs)
 
         def drop(tokens):
             """
@@ -308,14 +304,14 @@ class Connection(Utility_Functions):
                     assert comma_or_close == ","
                 # Insert the row into the database
                 print("THIS IS WHERE WE WOULD RUN INSERT INTO - TABLE NAME, ROW CONTENTS",table_name,row_contents)
-                # self.database.insert_into(table_name, row_contents)
+                self.database.insert_into(table_name, row_contents)
                 
                 # Check if there are more rows to insert
                 if tokens and tokens[0] == ",":
                     Utility_Functions.pop_and_check(tokens, ",")
                 else:
                     break
-
+        
         def update(tokens):
             """
             Handles the UPDATE SQL statement.
@@ -379,15 +375,21 @@ class Connection(Utility_Functions):
                 self.database.del_where(table_name, col_name=col_name, operator=operator, constant=constant)
             return
 
-
         def select(tokens):
             """
             Handles the SELECT SQL statement.
-            Retrieves rows from a table, with optional filtering (WHERE) and ordering (ORDER BY).
+            Retrieves rows from a table, with optional DISTINCT, filtering (WHERE), and ordering (ORDER BY).
             """
             Utility_Functions.pop_and_check(tokens, "SELECT")
+
+            # Check for DISTINCT
+            distinct = False
+            if tokens[0] == "DISTINCT":
+                Utility_Functions.pop_and_check(tokens, "DISTINCT")
+                distinct = True
+
             output_columns = []
-            
+
             # Parse output columns
             while True:
                 col = tokens.pop(0)  # e.g., student.name or student.*
@@ -437,19 +439,18 @@ class Connection(Utility_Functions):
 
             # Call appropriate database method based on the presence of WHERE clause
             if where_clause_present:
-                print("WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns, where_col, where_value, operator)
-                """
+                print("SELECT WHERE CLAUSE PRESENT:",output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct)
                 return self.database.select_where(
-                    output_columns, table_name, order_by_columns, where_col, where_value, operator
+                    output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct
                 )
-                """
             else:
-                print("NO WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns)
-                # return self.database.select(output_columns, table_name, order_by_columns)
+                print("SELECT NO WHERE CLAUSE:",output_columns, table_name, order_by_columns, distinct)
+                return self.database.select(output_columns, table_name, order_by_columns, distinct)
 
 
         """
-        TOKENIZES AND SENDS STATMENT BELOW:
+        THIS IS WHERE WE TOKENIZE AND PULL THE INITIAL COMMAND: CREATE, SELECT, ETC....
+        THEN WE CHOOSE WHICH LOCK AND CONNECTION FUNC TO SEND IT TO!
         """
 
         tokens = Utility_Functions.tokenize(statement)
@@ -519,37 +520,30 @@ class Connection(Utility_Functions):
                 return []
             elif tokens[0] == "INSERT":
                 if not self.auto_commit:
-                    print("INSERT LOCK WOULD BE HERE")
-                    # self.database.reserved_lock()
+                    self.database.reserved_lock()
                 insert(tokens)
                 return []
             elif tokens[0] == "UPDATE":
                 if not self.auto_commit:
-                    print("UPDATE LOCK WOULD BE HERE")
-                    #self.database.reserved_lock()
+                    self.database.reserved_lock()
                 update(tokens)
                 return []
             elif tokens[0] == "DELETE":
                 if not self.auto_commit:
-                    print("DELETE LOCK WOULD BE HERE")
-                    # self.database.reserved_lock()
+                    self.database.reserved_lock()
                 delete(tokens)
             elif tokens[0] == "DROP":
                 if not self.auto_commit:
-                    print("DROP LOCK WOULD BE HERE")
-                    # self.database.exclusive_lock()
+                    self.database.exclusive_lock()
                 drop(tokens)
             else:  # tokens[0] == "SELECT"
-                print("SELECT LOCK WOULD BE HERE")
-
-                """
+                # print("SHOULD BE SELECT:",tokens[0])
                 if self.database.r_lock:
                     self.database.unlock_reserved()
                 if self.database.e_lock:
                     self.database.unlock_exclusive()
                 if not self.auto_commit:
                     self.database.shared_lock()
-                """
                 return select(tokens)
 
     def export_to_file(self, table_names, format="csv"):
@@ -589,6 +583,373 @@ class Connection(Utility_Functions):
         Placeholder method for closing a connection.
         """
         pass
+
+class Database(Utility_Functions):
+    """
+    Represents the database itself, containing tables and methods to perform various operations.
+    
+    Attributes:
+    filename: The name of the database file.
+    tables: A dictionary where table names map to Table objects.
+    s_lock, r_lock, e_lock: Class-level attributes for managing shared, reserved, and exclusive locks.
+    """
+    #  Class-level variables for shared, reserved, and exclusive locks, used in transaction management.
+    s_lock = False
+    r_lock = False
+    e_lock = False
+
+    def __init__(self, filename):
+        """
+        Initializes a database object with a given filename and an empty table dictionary.
+        """
+        self.filename = filename
+        self.tables = {}
+
+    """
+    Manage locking mechanisms to enforce transaction isolation and concurrency control.
+    - Acquire different types of locks to enforce transaction isolation.
+    - shared_lock(self), reserved_lock(self), exclusive_lock(self):
+    - unlock_shared(self), unlock_reserved(self), unlock_exclusive(self):
+    
+    """
+    def shared_lock(self):
+        if self.r_lock or self.e_lock:
+            raise Exception("Cannot acquire shared lock when reserved or exclusive lock is held.")
+        self.s_lock = True
+
+    def reserved_lock(self):
+        if self.e_lock:
+            raise Exception("Cannot acquire reserved lock when exclusive lock is held.")
+        self.r_lock = True
+
+    def exclusive_lock(self):
+        if self.r_lock or self.e_lock:
+            raise Exception("Cannot acquire exclusive lock when reserved or exclusive lock is held.")
+        self.e_lock = True
+    
+    """"
+    Release the respective locks.
+    """
+
+    def unlock_shared(self):
+        self.s_lock = False
+
+    def unlock_reserved(self):
+        self.r_lock = False
+
+    def unlock_exclusive(self):
+        self.e_lock = False
+
+    def print_lock_status(self):
+        """
+        Code for debugging the locking status upon commit.
+        """
+        print(f"Shared lock: {self.s_lock}")
+        print(f"Reserved lock: {self.r_lock}")
+        print(f"Exclusive lock: {self.e_lock}")
+
+    # Cannot begin transaction with an open transaction.
+    def check_zero_locks(self):
+        if self.s_lock or self.r_lock or self.e_lock:
+            raise Exception("Cannot begin transaction with an open transaction.")
+        
+    """
+    Start of table management functions:
+    - create_new_table(self, table_name, column_name_type_pairs):
+    - if_exists(self, table_name, column_name_type_pairs):
+    - drop(self, table_name):
+    """
+
+    def create_new_table(self, table_name, column_name_type_pairs):
+        """
+        Creates a new table in the database.
+        Is called in the create_table function of the execute func in the connection class after CREATE TABLE statement tokenized/submitted.
+        """
+        if table_name in self.tables:
+            raise Exception("Table Already In Database")
+        assert table_name not in self.tables
+        self.tables[table_name] = Table(table_name, column_name_type_pairs)
+        print(f"Create New Table Test - Tables in Database {self.filename}: {self.tables.keys()}")
+        return []
+
+    def if_exists(self, table_name, column_name_type_pairs):
+        """
+        Is called in the create_table function of the execute func in the connection class.
+        For IF NOT EXISTS statements in Create/Drop functions of the execute 
+        Ensures the table exists or creates it if it does not.
+        """
+        if table_name in self.tables:
+            return
+        else:
+            self.tables[table_name] = Table(table_name, column_name_type_pairs)
+    
+    """
+    Start of row management and query execution.
+    - del_all_rows(self, table_name):
+    - del_where(self, table_name, col_name, operator, constant):
+    - view, insert_into, select, select_where, update
+    """
+
+    def del_all_rows(self, table_name):
+        """
+        Deletes all rows from the specified table. 
+        Called in delete func of execute func of connect class.
+        """
+        self.tables[table_name].rows.clear()
+        return
+
+    def drop(self, table_name):
+        """
+        Removes a table from the database.
+        """
+        if self.tables[table_name] is not None:
+            del self.tables[table_name]
+        return
+
+    def del_where(self, table_name, col_name, operator, constant):
+        """
+        Deletes rows matching a condition in the WHERE clause.
+        Called in the delete func of the connection class - execute func.
+        Specific to:
+        - OPERATORS: >, <, =, !=, IS, IS NOT
+        """
+        # Loop through the list of all rows,
+        for dict_ in self.tables[table_name].rows:
+            # Each row is a dictionary, loop through the key/values.
+            for key, value in dict_.items():
+                # If the column specified by where exists,
+                if key == col_name:
+                    # Change
+                    if value is not None:
+                        # Check for operator instance:
+                        if operator == ">":
+                            if value > constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "<":
+                            if value < constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "=":
+                            if value == constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "!=":
+                            if value != constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        else:
+                            print("ISSUE HERE!")
+
+        # Loop through the list of all rows,
+        for dict_ in self.tables[table_name].rows:
+            # Each row is a dictionary, loop through the key/values.
+            for key, value in dict_.items():
+                # If the column specified by where exists,
+                if key == col_name:
+                    # Change
+                    if value is not None:
+                        # Check for operator instance:
+                        if operator == ">":
+                            if value > constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "<":
+                            if value < constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "=":
+                            if value == constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        elif operator == "!=":
+                            if value != constant:
+                                self.tables[table_name].rows.remove(dict_)
+                        else:
+                            print("ISSUE HERE!")
+
+
+    def insert_into(self, table_name, row_contents):
+        """
+        Inserts a new row into the specified table.
+        """
+        assert table_name in self.tables
+        table = self.tables[table_name]
+        table.insert_new_row(row_contents)
+        return []
+
+    def select(self, output_columns, table_name, order_by_columns, distinct=False):
+        """
+        Selects and orders rows based on specified columns, optionally removing duplicates.
+        """
+        assert table_name in self.tables
+        table = self.tables[table_name]
+        return table.select_rows(output_columns, order_by_columns, distinct)
+
+    def select_where(self, output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct=False):
+        """
+        Selects rows that meet a condition and optionally orders them, with an option for DISTINCT.
+        """
+        assert table_name in self.tables
+        table = self.tables[table_name]
+        return table.select_where_rows(output_columns, order_by_columns, where_col, where_value, operator, distinct)
+
+    def update(self, table_name, columns, values, where_column=None, where_vals=None):
+        """
+        Updates rows in a table based on specified conditions.
+        """
+        assert table_name in self.tables
+        table = self.tables[table_name]
+        # Check table class for update func.
+        return table.update_table(columns, values, where_column, where_vals)
+    
+    def view(self, table_name):
+        """
+        Retrieves and displays all rows from the specified table.
+        """
+        # print("TABLE NAME CHECK:",self.tables[table_name].name)
+        # print("TABLE ROWS CHECK",self.tables[table_name].rows)
+        # print("COLUMNS:", self.tables[table_name].column_names)
+        if len(self.tables) != 0:
+            return self.tables[table_name].rows
+        else:
+            print("ENTIRE DATABASE:", self.tables)
+ 
+
+class Table(Utility_Functions):
+    """
+    Represents an individual table in the database, containing rows and column definitions.
+    
+    Attributes:
+    name: The name of the table.
+    column_names: A list of column names in the table.
+    column_types: A list of column data types corresponding to the columns.
+    rows: A list of rows (each row is a dictionary mapping column names to values).
+    """
+    def __init__(self, name, column_name_type_pairs):
+        """"
+        Initializes a table with a name, columns, and an empty row list.
+        """
+        self.name = name
+        self.column_names, self.column_types = zip(*column_name_type_pairs)
+        self.rows = []
+
+    def insert_new_row(self, row_contents):
+        """
+        Adds a new row to the table.
+        """
+        # print("COLUMN NAMES in insert_new_row:",self.column_names)
+        # print("ROW CONTENTS in insert_new_row:",row_contents)
+
+        assert len(self.column_names) == len(row_contents)
+        row = dict(zip(self.column_names, row_contents))
+        self.rows.append(row)
+        # print(f"Inserted row into {self.name}: {row_contents}")
+        print(f"Current rows: {self.rows}")
+
+
+    def update_table(self, columns, values, where_column, where_vals):
+        """
+        Updates rows in the table matching conditions.
+        """
+        # # ['UPDATE', 'student', 'SET', 'grade', '=', 3.0, 'WHERE', 'piazza', '=', 2, ';']
+
+        # If update has no where clause,
+        if where_column is None:
+            # Each row is a dictionary
+            for row in self.rows:
+                for column in range(len(columns)):
+                    # Columns is a list, so is values, so Cols[columns] is new key,
+                    # Values[cols] is value.
+                    row[columns[column]] = values[column]
+        # If there is a where clause:
+        else:
+            # Pull columns to change:
+            first_col = columns.pop(0)
+
+            for row_dict in self.rows:
+                for key, value in row_dict.items():
+                    if key == where_column:
+                        if value == where_vals:
+                            row_dict[first_col] = values[0]
+                            # If more than one column:
+                            if len(columns) > 0:
+                                second_col = columns.pop(0)
+                                row_dict[second_col] = values[1]
+
+    def select_rows(self, output_columns, order_by_columns, distinct=False):
+        """
+        Retrieve rows, with optional filtering, ordering, and DISTINCT.
+        """
+        def expand_star_column(output_columns):
+            new_output_columns = []
+            for col in output_columns:
+                if col == "*":
+                    new_output_columns.extend(self.column_names)
+                else:
+                    new_output_columns.append(col)
+            return new_output_columns
+
+        def check_columns_exist(columns):
+            assert all(col in self.column_names for col in columns)
+
+        def sort_rows(order_by_columns):
+            return sorted(self.rows, key=itemgetter(*order_by_columns))
+
+        def generate_tuples(rows, output_columns):
+            seen = set()
+            for row in rows:
+                result = tuple(row[col] for col in output_columns)
+                if distinct:
+                    if result in seen:
+                        continue
+                    seen.add(result)
+                yield result
+
+        expanded_output_columns = expand_star_column(output_columns)
+        check_columns_exist(expanded_output_columns)
+        check_columns_exist(order_by_columns)
+        sorted_rows = sort_rows(order_by_columns)
+        print("TEST SELECT NO WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
+        return generate_tuples(sorted_rows, expanded_output_columns)
+
+    def select_where_rows(self, output_columns, order_by_columns, where_col, where_val, operator, distinct=False):
+        """
+        Retrieve rows, with optional filtering, ordering, and DISTINCT.
+        """
+        def expand_star_column(output_columns):
+            new_output_columns = []
+            for col in output_columns:
+                if col == "*":
+                    new_output_columns.extend(self.column_names)
+                else:
+                    new_output_columns.append(col)
+            return new_output_columns
+
+        def generate_tuples(rows, output_columns):
+            seen = set()
+            for row in rows:
+                result = tuple(row[col] for col in output_columns)
+                if distinct:
+                    if result in seen:
+                        continue
+                    seen.add(result)
+                yield result
+
+        expanded_output_columns = expand_star_column(output_columns)
+        where_sort = []
+
+        for dict_ in self.rows:
+            for key, value in dict_.items():
+                if key == where_col:
+                    if value is not None:
+                        if operator == ">" and value > where_val:
+                            where_sort.append(dict_)
+                        elif operator == "<" and value < where_val:
+                            where_sort.append(dict_)
+                        elif operator == "=" and value == where_val:
+                            where_sort.append(dict_)
+                        elif operator == "!=" and value != where_val:
+                            where_sort.append(dict_)
+
+        sorted_rows = sorted(where_sort, key=itemgetter(*order_by_columns))
+        print("TEST SELECT WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
+        return generate_tuples(sorted_rows, expanded_output_columns)
+
+
 
 Connection = connect("test_database")
 query = "CREATE TABLE student (name TEXT, grade REAL, id INTEGER);"
