@@ -1,4 +1,3 @@
-
 """
 Creates a database management system that takes in SQL commands and has transaction locking support.
 Four Main classes: Connection, Database, Tables, and Utility Functions
@@ -23,13 +22,6 @@ from copy import deepcopy
 import csv
 import os
 from datetime import datetime
-
-
-
-
-"""
-Utility Functions For Data Processing/Tokenizing the SQL Statements
-"""
 
 class Utility_Functions(object):
     def __init__(self):
@@ -399,11 +391,18 @@ class Connection(Utility_Functions):
         def select(tokens):
             """
             Handles the SELECT SQL statement.
-            Retrieves rows from a table, with optional filtering (WHERE) and ordering (ORDER BY).
+            Retrieves rows from a table, with optional DISTINCT, filtering (WHERE), and ordering (ORDER BY).
             """
             Utility_Functions.pop_and_check(tokens, "SELECT")
+
+            # Check for DISTINCT
+            distinct = False
+            if tokens[0] == "DISTINCT":
+                Utility_Functions.pop_and_check(tokens, "DISTINCT")
+                distinct = True
+
             output_columns = []
-            
+
             # Parse output columns
             while True:
                 col = tokens.pop(0)  # e.g., student.name or student.*
@@ -453,13 +452,14 @@ class Connection(Utility_Functions):
 
             # Call appropriate database method based on the presence of WHERE clause
             if where_clause_present:
-                print("WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns, where_col, where_value, operator)
+                print("SELECT WHERE CLAUSE PRESENT:",output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct)
                 return self.database.select_where(
-                    output_columns, table_name, order_by_columns, where_col, where_value, operator
+                    output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct
                 )
             else:
-                print("NO WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns)
-                return self.database.select(output_columns, table_name, order_by_columns)
+                print("SELECT NO WHERE CLAUSE:",output_columns, table_name, order_by_columns, distinct)
+                return self.database.select(output_columns, table_name, order_by_columns, distinct)
+
 
         """
         THIS IS WHERE WE TOKENIZE AND PULL THE INITIAL COMMAND: CREATE, SELECT, ETC....
@@ -784,21 +784,21 @@ class Database(Utility_Functions):
         table.insert_new_row(row_contents)
         return []
 
-    def select(self, output_columns, table_name, order_by_columns):
+    def select(self, output_columns, table_name, order_by_columns, distinct=False):
         """
-        Selects and orders rows based on specified columns.
+        Selects and orders rows based on specified columns, optionally removing duplicates.
         """
         assert table_name in self.tables
         table = self.tables[table_name]
-        return table.select_rows(output_columns, order_by_columns)
+        return table.select_rows(output_columns, order_by_columns, distinct)
 
-    def select_where(self, output_columns, table_name, order_by_columns, where_col, where_value, operator):
+    def select_where(self, output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct=False):
         """
-        Selects rows that meet a condition and optionally orders them.
+        Selects rows that meet a condition and optionally orders them, with an option for DISTINCT.
         """
         assert table_name in self.tables
         table = self.tables[table_name]
-        return table.select_where_rows(output_columns, order_by_columns, where_col, where_value, operator)
+        return table.select_where_rows(output_columns, order_by_columns, where_col, where_value, operator, distinct)
 
     def update(self, table_name, columns, values, where_column=None, where_vals=None):
         """
@@ -883,59 +883,9 @@ class Table(Utility_Functions):
                                 second_col = columns.pop(0)
                                 row_dict[second_col] = values[1]
 
-    def select_where_rows(self, output_columns, order_by_columns, where_col, where_val, operator):
+    def select_rows(self, output_columns, order_by_columns, distinct=False):
         """
-        Retrieve rows, with optional filtering and ordering.
-        """
-        def expand_star_column(output_columns):
-            new_output_columns = []
-            for col in output_columns:
-                if col == "*":
-                    new_output_columns.extend(self.column_names)
-                else:
-                    new_output_columns.append(col)
-            return new_output_columns
-
-        def generate_tuples(rows, output_columns):
-            for row in rows:
-                yield tuple(row[col] for col in output_columns)
-
-        # Check if * (all) or specific columns:
-        expanded_output_columns = expand_star_column(output_columns)
-
-        # Where checks:
-        # SELECT * FROM student WHERE grade > 3.5 ORDER BY student.piazza, grade;
-        where_sort = []
-
-        for dict_ in self.rows:
-            for key, value in dict_.items():
-                # If the column specified by where exists,
-                if key == where_col:
-                    if value is not None:
-                        # Check for operator instance:
-                        if operator == ">":
-                            if value > where_val:
-                                # Extract the rows that fit the criteria.
-                                where_sort.append(dict_)
-                        elif operator == "<":
-                            if value < where_val:
-                                where_sort.append(dict_)
-                        elif operator == "=":
-                            if value == where_val:
-                                where_sort.append(dict_)
-                        elif operator == "!=":
-                            if value != where_val:
-                                where_sort.append(dict_)
-                        else:
-                            print("ISSUE")
-
-        # Sort the where rows, extract the tuples, return.
-        sorted_rows = sorted(where_sort, key=itemgetter(*order_by_columns))
-        return generate_tuples(sorted_rows, expanded_output_columns)
-
-    def select_rows(self, output_columns, order_by_columns):
-        """
-        Retrieve rows, with optional filtering and ordering.
+        Retrieve rows, with optional filtering, ordering, and DISTINCT.
         """
         def expand_star_column(output_columns):
             new_output_columns = []
@@ -953,14 +903,63 @@ class Table(Utility_Functions):
             return sorted(self.rows, key=itemgetter(*order_by_columns))
 
         def generate_tuples(rows, output_columns):
+            seen = set()
             for row in rows:
-                yield tuple(row[col] for col in output_columns)
+                result = tuple(row[col] for col in output_columns)
+                if distinct:
+                    if result in seen:
+                        continue
+                    seen.add(result)
+                yield result
 
         expanded_output_columns = expand_star_column(output_columns)
         check_columns_exist(expanded_output_columns)
         check_columns_exist(order_by_columns)
         sorted_rows = sort_rows(order_by_columns)
-        print("TEST SELECT ROWS OUTPUT:",generate_tuples(sorted_rows, expanded_output_columns))
+        print("TEST SELECT NO WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
+        return generate_tuples(sorted_rows, expanded_output_columns)
+
+    def select_where_rows(self, output_columns, order_by_columns, where_col, where_val, operator, distinct=False):
+        """
+        Retrieve rows, with optional filtering, ordering, and DISTINCT.
+        """
+        def expand_star_column(output_columns):
+            new_output_columns = []
+            for col in output_columns:
+                if col == "*":
+                    new_output_columns.extend(self.column_names)
+                else:
+                    new_output_columns.append(col)
+            return new_output_columns
+
+        def generate_tuples(rows, output_columns):
+            seen = set()
+            for row in rows:
+                result = tuple(row[col] for col in output_columns)
+                if distinct:
+                    if result in seen:
+                        continue
+                    seen.add(result)
+                yield result
+
+        expanded_output_columns = expand_star_column(output_columns)
+        where_sort = []
+
+        for dict_ in self.rows:
+            for key, value in dict_.items():
+                if key == where_col:
+                    if value is not None:
+                        if operator == ">" and value > where_val:
+                            where_sort.append(dict_)
+                        elif operator == "<" and value < where_val:
+                            where_sort.append(dict_)
+                        elif operator == "=" and value == where_val:
+                            where_sort.append(dict_)
+                        elif operator == "!=" and value != where_val:
+                            where_sort.append(dict_)
+
+        sorted_rows = sorted(where_sort, key=itemgetter(*order_by_columns))
+        print("TEST SELECT WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
         return generate_tuples(sorted_rows, expanded_output_columns)
 
 """
