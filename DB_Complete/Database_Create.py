@@ -13,6 +13,10 @@ Supports three lock types:
 - Reserved Lock: Ensures no new transactions start but allows completing ongoing ones.
 - Exclusive Lock: Prevents all other operations on the database
 """
+# Where they want their database exported.
+from tkinter import Tk
+from tkinter.filedialog import asksaveasfilename
+
 import string
 import re
 import operator
@@ -569,15 +573,32 @@ class Connection(Utility_Functions):
 
     def close(self):
         print("CLOSE ALL TEST", _ALL_DATABASES.keys())
-        # write the database contents into disk by filename, used json here.
+
+        # Suppress the root Tkinter window
+        root = Tk()
+        root.withdraw()  # Hide the main window
+
+        # Prompt the user to select a file path to save the database
+        file_path = asksaveasfilename(
+            title="Save Database File",
+            defaultextension=".json",
+            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")],
+        )
+
+        # If the user cancels, do nothing
+        if not file_path:
+            print("Save operation canceled.")
+            return
+
+        # Write the database contents to the selected file path
         temp_dict = {}
-        with open(self.database.filename, "w") as file:
+        with open(file_path, "w") as file:
             for tb in self.database.tables:
                 temp_tb = self.database.tables[tb]
-                # extract rows, use json dump
+                # Extract rows, use JSON dump
                 temp_dict[tb] = temp_tb.rows
             file.write(json.dumps(temp_dict))
-            return
+            print(f"Database successfully saved to {file_path}")
 
 class Database(Utility_Functions):
     """
