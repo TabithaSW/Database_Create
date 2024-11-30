@@ -175,7 +175,8 @@ class Utility_Functions(object):
             if len(query) == len(old_query):
                 print(query[0])
                 raise AssertionError("Query didn't get shorter.")
-
+        print("ORIGINAL QUERY INPUT",query)
+        print("FINAL TOKENS: ", tokens)
         return tokens
 
 _ALL_DATABASES = {} # A dictionary that tracks all database instances by their filenames.
@@ -324,7 +325,7 @@ class Connection(Utility_Functions):
                     assert comma_or_close == ","
                 # Insert the row into the database
                 print("THIS IS WHERE WE WOULD RUN INSERT INTO - TABLE NAME, ROW CONTENTS",table_name,row_contents)
-                # self.database.insert_into(table_name, row_contents)
+                self.database.insert_into(table_name, row_contents)
                 
                 # Check if there are more rows to insert
                 if tokens and tokens[0] == ",":
@@ -402,16 +403,15 @@ class Connection(Utility_Functions):
             """
             Utility_Functions.pop_and_check(tokens, "SELECT")
             output_columns = []
+            
+            # Parse output columns
             while True:
-                col = tokens.pop(0)  # student.name or student.*
-                # SELECT student.name FROM student ORDER BY student.piazza, grade;
+                col = tokens.pop(0)  # e.g., student.name or student.*
                 if "." in col:
-                    # This is if the table has .something selected, we need after the dot in the token.
                     parts = col.split('.')
                     output_columns.append(parts[1])
                 else:
                     output_columns.append(col)
-                # print("OUTPUT COLUMNS SELECT:",output_columns)
                 comma_or_from = tokens.pop(0)
                 if comma_or_from == "FROM":
                     break
@@ -419,63 +419,52 @@ class Connection(Utility_Functions):
 
             table_name = tokens.pop(0)
 
-            # AFTER TABLE NAME, THERE MAY BE A WHERE CLAUSE!
-            # EXAMPLE: SELECT * FROM student WHERE grade > 3.5 ORDER BY student.piazza, grade;
+            # Initialize variables for optional clauses
+            where_clause_present = False
+            where_col, operator, where_value = None, None, None
+            order_by_columns = []
 
-            if tokens[0] == "WHERE":
-                order_by_columns = []
-                # Remove WHERE word,
+            # Check for optional WHERE clause
+            if tokens and tokens[0] == "WHERE":
+                where_clause_present = True
                 Utility_Functions.pop_and_check(tokens, "WHERE")
-                # Pull column, operator, and constant
                 where_col = tokens.pop(0)
-
-                # We're not doing the null checks for project 4! Pull operator >, <, =, !=
                 operator = tokens.pop(0)
-                # If tokens has ! and then =,
                 if tokens[0] == "=":
                     Utility_Functions.pop_and_check(tokens, "=")
                     operator = "!="
-                    # print(operator)
                 where_value = tokens.pop(0)
-                # Remove order and by:
+
+            # Check for optional ORDER BY clause
+            if tokens and tokens[0] == "ORDER":
                 Utility_Functions.pop_and_check(tokens, "ORDER")
                 Utility_Functions.pop_and_check(tokens, "BY")
-                # All order by columns work normally!
-                while True:
+                while tokens:
                     col = tokens.pop(0)
-                    # IF STUDENT.PIAZZA type of col
                     if "." in col:
                         parts = col.split(".")
                         order_by_columns.append(parts[1])
-                        if tokens[0] == ",":
-                            Utility_Functions.pop_and_check(tokens, ",")
                     else:
                         order_by_columns.append(col)
-                    if not tokens:
+                    if tokens and tokens[0] == ",":
+                        Utility_Functions.pop_and_check(tokens, ",")
+                    else:
                         break
 
-                return self.database.select_where(output_columns, table_name, order_by_columns, where_col,
-                                                  where_value, operator)
-
-            # If no where clause, business as usual:
+            # Call appropriate database method based on the presence of WHERE clause
+            if where_clause_present:
+                print("WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns, where_col, where_value, operator)
+                return self.database.select_where(
+                    output_columns, table_name, order_by_columns, where_col, where_value, operator
+                )
             else:
+                print("NO WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns)
+                return self.database.select(output_columns, table_name, order_by_columns)
 
-                Utility_Functions.pop_and_check(tokens, "ORDER")
-                Utility_Functions.pop_and_check(tokens, "BY")
-                order_by_columns = []
-                while True:
-                    col = tokens.pop(0)
-                    if "." in col:
-                        parts = col.split(".")
-                        order_by_columns.append(parts[1])
-                    else:
-                        order_by_columns.append(col)
-                    # print("ORDER COLUMNS SELECT:",order_by_columns)
-                    if not tokens:
-                        break
-                    Utility_Functions.pop_and_check(tokens, ",")
-                return self.database.select(
-                    output_columns, table_name, order_by_columns)
+        """
+        THIS IS WHERE WE TOKENIZE AND PULL THE INITIAL COMMAND: CREATE, SELECT, ETC....
+        THEN WE CHOOSE WHICH LOCK AND CONNECTION FUNC TO SEND IT TO!
+        """
 
         tokens = Utility_Functions.tokenize(statement)
         assert tokens[0] in {"CREATE", "INSERT", "SELECT", "DELETE", "UPDATE", "DROP", "BEGIN", "COMMIT", "ROLLBACK"}
@@ -561,6 +550,7 @@ class Connection(Utility_Functions):
                     self.database.exclusive_lock()
                 drop(tokens)
             else:  # tokens[0] == "SELECT"
+                # print("SHOULD BE SELECT:",tokens[0])
                 if self.database.r_lock:
                     self.database.unlock_reserved()
                 if self.database.e_lock:
@@ -970,6 +960,7 @@ class Table(Utility_Functions):
         check_columns_exist(expanded_output_columns)
         check_columns_exist(order_by_columns)
         sorted_rows = sort_rows(order_by_columns)
+        print("TEST SELECT ROWS OUTPUT:",generate_tuples(sorted_rows, expanded_output_columns))
         return generate_tuples(sorted_rows, expanded_output_columns)
 
 """

@@ -379,6 +379,7 @@ class Connection(Utility_Functions):
                 self.database.del_where(table_name, col_name=col_name, operator=operator, constant=constant)
             return
 
+
         def select(tokens):
             """
             Handles the SELECT SQL statement.
@@ -386,16 +387,15 @@ class Connection(Utility_Functions):
             """
             Utility_Functions.pop_and_check(tokens, "SELECT")
             output_columns = []
+            
+            # Parse output columns
             while True:
-                col = tokens.pop(0)  # student.name or student.*
-                # SELECT student.name FROM student ORDER BY student.piazza, grade;
+                col = tokens.pop(0)  # e.g., student.name or student.*
                 if "." in col:
-                    # This is if the table has .something selected, we need after the dot in the token.
                     parts = col.split('.')
                     output_columns.append(parts[1])
                 else:
                     output_columns.append(col)
-                # print("OUTPUT COLUMNS SELECT:",output_columns)
                 comma_or_from = tokens.pop(0)
                 if comma_or_from == "FROM":
                     break
@@ -403,67 +403,54 @@ class Connection(Utility_Functions):
 
             table_name = tokens.pop(0)
 
-            # AFTER TABLE NAME, THERE MAY BE A WHERE CLAUSE!
-            # EXAMPLE: SELECT * FROM student WHERE grade > 3.5 ORDER BY student.piazza, grade;
+            # Initialize variables for optional clauses
+            where_clause_present = False
+            where_col, operator, where_value = None, None, None
+            order_by_columns = []
 
-            if tokens[0] == "WHERE":
-                order_by_columns = []
-                # Remove WHERE word,
+            # Check for optional WHERE clause
+            if tokens and tokens[0] == "WHERE":
+                where_clause_present = True
                 Utility_Functions.pop_and_check(tokens, "WHERE")
-                # Pull column, operator, and constant
                 where_col = tokens.pop(0)
-
-                # We're not doing the null checks for project 4! Pull operator >, <, =, !=
                 operator = tokens.pop(0)
-                # If tokens has ! and then =,
                 if tokens[0] == "=":
                     Utility_Functions.pop_and_check(tokens, "=")
                     operator = "!="
-                    # print(operator)
                 where_value = tokens.pop(0)
-                # Remove order and by:
+
+            # Check for optional ORDER BY clause
+            if tokens and tokens[0] == "ORDER":
                 Utility_Functions.pop_and_check(tokens, "ORDER")
                 Utility_Functions.pop_and_check(tokens, "BY")
-                # All order by columns work normally!
-                while True:
+                while tokens:
                     col = tokens.pop(0)
-                    # IF STUDENT.PIAZZA type of col
                     if "." in col:
                         parts = col.split(".")
                         order_by_columns.append(parts[1])
-                        if tokens[0] == ",":
-                            Utility_Functions.pop_and_check(tokens, ",")
                     else:
                         order_by_columns.append(col)
-                    if not tokens:
+                    if tokens and tokens[0] == ",":
+                        Utility_Functions.pop_and_check(tokens, ",")
+                    else:
                         break
 
-                return self.database.select_where(output_columns, table_name, order_by_columns, where_col,
-                                                  where_value, operator)
-
-            # If no where clause, business as usual:
+            # Call appropriate database method based on the presence of WHERE clause
+            if where_clause_present:
+                print("WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns, where_col, where_value, operator)
+                """
+                return self.database.select_where(
+                    output_columns, table_name, order_by_columns, where_col, where_value, operator
+                )
+                """
             else:
+                print("NO WHERE CLAUSE SELECT:",output_columns, table_name, order_by_columns)
+                # return self.database.select(output_columns, table_name, order_by_columns)
 
-                Utility_Functions.pop_and_check(tokens, "ORDER")
-                Utility_Functions.pop_and_check(tokens, "BY")
-                order_by_columns = []
-                while True:
-                    col = tokens.pop(0)
-                    if "." in col:
-                        parts = col.split(".")
-                        order_by_columns.append(parts[1])
-                    else:
-                        order_by_columns.append(col)
-                    # print("ORDER COLUMNS SELECT:",order_by_columns)
-                    if not tokens:
-                        break
-                    Utility_Functions.pop_and_check(tokens, ",")
-                print("SELECT FUNCTION IN DATABASE CLASS RUNS HERE - TABLE NAME, OUTPUT COLUMNS, ORDER BY COLUMNS",
-                      table_name, output_columns, order_by_columns )
-                """
-                return self.database.select(
-                    output_columns, table_name, order_by_columns)
-                """
+
+        """
+        TOKENIZES AND SENDS STATMENT BELOW:
+        """
 
         tokens = Utility_Functions.tokenize(statement)
         assert tokens[0] in {"CREATE", "INSERT", "SELECT", "DELETE", "UPDATE", "DROP", "BEGIN", "COMMIT", "ROLLBACK"}
