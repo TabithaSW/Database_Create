@@ -3,6 +3,9 @@ This project is a lightweight, individual statement or file based database manag
 
 **Custom database, tables, rows, columns, and views. Structured to allow properties similar, or mimicking, sqlite3 python module.**
 
+<img src="DBMS_Logo.png" alt="DBMS" width="250" height="250">
+
+
 - Database handles individual connections to the database for individual transactions, it can interpret BEGIN/COMMIT/ROLLBACK TRANSACTION statements.
 
 - Database handles transactions modes for shared, reserved, and exclusive locks. These modes are DEFERRED, IMMEDIATE, and EXCLUSIVE.
