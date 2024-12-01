@@ -1,14 +1,23 @@
 # Custom Database Management System
-This project is a lightweight, individual statement or file based database management system that takes in SQL and generates custom databases with tables and views. The database can be generated with ease, modified in the flask application, and exported as a JSON file to the users PC.
+This project is a lightweight, individual statement or file-based database management system that takes in SQL and generates custom databases with tables and views. The database can be generated with ease, modified via an intuitive Flask web application, and exported as a JSON file to the user's PC.
 
-**Custom database, tables, rows, columns, and views. Structured to allow properties similar, or mimicking, sqlite3 python module.**
+# Key Features:
+**Custom Database Management:** Easily create, modify, and manage custom databases, including tables, rows, columns, and views, with functionality similar to or mimicking the sqlite3 Python module.
 
+<<<<<<< HEAD
 <img src="DBMS_Logo.png" alt="DBMS" width="250" height="250">
 
 
 - Database handles individual connections to the database for individual transactions, it can interpret BEGIN/COMMIT/ROLLBACK TRANSACTION statements.
+=======
+**Flask Web Application:** A user-friendly web interface allows users to submit SQL queries, view database outputs, and export the database. This interface streamlines database interaction without requiring direct command-line usage.
+>>>>>>> e39ada82ddf4e02ce6ae569e79425624df29f1ca
 
-- Database handles transactions modes for shared, reserved, and exclusive locks. These modes are DEFERRED, IMMEDIATE, and EXCLUSIVE.
+**Transaction Handling:** Supports transaction operations like BEGIN, COMMIT, and ROLLBACK for individual connections, ensuring data consistency and integrity during transactions.
+
+**Locking Mechanisms:** Implements shared, reserved, and exclusive locks with support for transaction modes: DEFERRED, IMMEDIATE, and EXCLUSIVE.
+
+**Data Export:** Allows seamless export of the database as a JSON file for easy storage or integration with other tools and systems.
 
 # SQL Statement Support for:
 - CREATE TABLE
