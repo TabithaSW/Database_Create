@@ -11,11 +11,11 @@ body {
 /* Header Styles */
 /* Styles the header section at the top of the page */
 header {
-    background-color: #007bff; /* Sets a blue background for the header */
+    background-color: rgb(109, 151, 128); /* Sets a blue background for the header */
     color: white; /* Makes the text color white for contrast */
     padding: 20px; /* Adds spacing inside the header for breathing room */
     text-align: center; /* Centers the header text */
-    border-bottom: 5px solid #0056b3; /* Adds a darker blue border at the bottom of the header */
+    border-bottom: 5px rgb(109, 151, 128); /* Adds a darker blue border at the bottom of the header */
 }
 
 /* Optional logo styling for the header */
@@ -71,7 +71,7 @@ textarea {
 /* Button Styles */
 /* Styles the buttons for submitting queries and closing the database */
 button {
-    background-color: #007bff; /* Sets the button background color to blue */
+    background-color: rgb(109, 151, 128); /* Sets the button background color to blue */
     color: white; /* Makes the button text white for contrast */
     border: none; /* Removes the default button border */
     padding: 10px 20px; /* Adds internal padding inside the button */
@@ -83,7 +83,7 @@ button {
 /* Hover Effect for Buttons */
 /* Changes the button appearance when the user hovers over it */
 button:hover {
-    background-color: #0056b3; /* Darkens the button background color on hover */
+    background-color: rgb(109, 151, 128); /* Darkens the button background color on hover */
 }
 
 /* Footer Styles */
