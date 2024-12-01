@@ -10,21 +10,23 @@ body {
     color: #333;
 }
 
-/* Header Styles */
-/* Applies a gradient background to the header section */
 header {
-    background: linear-gradient(to bottom, rgb(109, 151, 128), #eee7a9, #b1cbe7);
+    position: relative;
+    background: linear-gradient(to right, #f7f8c4, rgb(109, 151, 128), #bccee2);
     color: white;
     padding: 20px;
     text-align: center;
     border-bottom: 5px solid #000000;
 }
 
-/* Optional logo styling for the header */
-/* If a logo is added, this controls its size and spacing */
-header .logo {
-    height: 50px;
-    margin-bottom: 10px;
+.logo {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    border: 1px solid black;
+    transform: translateY(-50%);
+    height: 100px; /* 3x the original size */
+    width: auto; /* Maintain the aspect ratio */
 }
 
 /* Parent Container (Main) Styles */
