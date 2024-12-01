@@ -27,8 +27,8 @@ This project is a lightweight, SQL statement or file-based database management s
 - BEGIN TRANSACTION
 - COMMIT TRANSACTION
 - ROLLBACK TRANSACTION
-- Multi Insert Statements
-
+- Multi Insert and Column/Row Level Inserts
+  
 # In Progress:
 - Support for ASCENDING/DESCENDING statements.
 - Support for INNER, LEFT, FULL OUTER, and RIGHT JOIN statements.
