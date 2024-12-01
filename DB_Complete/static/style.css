@@ -71,20 +71,25 @@ textarea {
 /* Button Styles */
 /* Styles the buttons for submitting queries and closing the database */
 button {
-    background-color: rgb(109, 151, 128); /* Sets the button background color to blue */
+    background-color: rgb(109, 151, 128); /* Sets the button background color to green */
     color: white; /* Makes the button text white for contrast */
-    border: none; /* Removes the default button border */
-    padding: 10px 20px; /* Adds internal padding inside the button */
-    border-radius: 5px; /* Rounds the corners of the button */
+    border: 1px solid black; /* Adds a thin black border */
+    padding: 15px 20px; /* Adds internal padding inside the button */
+    border-radius: 8px; /* Rounds the corners of the button */
     cursor: pointer; /* Changes the cursor to a pointer when hovering */
     font-size: 16px; /* Sets the font size of the button text */
+    margin-bottom: 15px; /* Adds space between buttons */
+    transition: background-color 0.4s, color 0.4s; /* Smooth transition effect for hover state */
 }
 
 /* Hover Effect for Buttons */
 /* Changes the button appearance when the user hovers over it */
 button:hover {
-    background-color: rgb(109, 151, 128); /* Darkens the button background color on hover */
+    background-color: white; /* Changes background color to white on hover */
+    color: black; /* Changes text color to black on hover */
+    border: 1px solid black; /* Ensures the border remains visible */
 }
+
 
 /* Footer Styles */
 /* Styles the footer at the bottom of the page */
