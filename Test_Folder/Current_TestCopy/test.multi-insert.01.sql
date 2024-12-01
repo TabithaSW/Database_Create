@@ -1,4 +1,4 @@
-CREATE TABLE student (name TEXT, grade REAL, piazza INTEGER);
-INSERT INTO student VALUES ('James', 4.0, 1), ('Yaxin', 4.0, 2);
-INSERT INTO student VALUES ('Li', 3.2, 2);
-SELECT * FROM student ORDER BY piazza, grade;
+CREATE TABLE student (name TEXT, grade REAL, class INTEGER);
+INSERT INTO student VALUES ('Liam', 4.0, 1), ('Dean', 4.0, 2);
+INSERT INTO student VALUES ('Angel', 3.2, 2);
+SELECT * FROM student ORDER BY grade, class;

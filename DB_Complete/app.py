@@ -47,6 +47,7 @@ def execute_query():
                 result = connection.execute(statement + ';')  # Add back the semicolon
                 if result:  # Append the result if any
                     results.append(list(result))
+                    # print("DEBUGGING RESULTS!",results) [[('Angel', 3.2, 2), ('Liam', 4.0, 1), ('Dean', 4.0, 2)]]
 
         return jsonify({'success': True, 'result': results if results else "All statements executed successfully. Run SELECT to view contents."})
 

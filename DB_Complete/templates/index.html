@@ -54,34 +54,62 @@
         <!-- Attribution message in the footer -->
         <p>Powered By - Github.com/TabithaSW</p>
     </footer>
-
-    <!-- JavaScript section for handling user interactions -->
+    <!-- javaScript, calls my app.py functions execute and close, formatted so data appears tabular. -->
     <script>
-        // Handles the submission of a query when the "Execute Query" button is clicked
+        // Handles the submission of a query when the "Execute Query" button is clicked.
+        // The html submit-query is the button, so The .click(function() { ... }) part attaches a click event handler to the button.
         $('#submit-query').click(function () {
-            const query = $('#query-input').val(); // Gets the user's input from the textarea
-            
-            // Sends the query to the Flask server's /execute endpoint
+            const query = $('#query-input').val();
+    
             $.post('/execute', { query: query }, function (data) {
+                // Retrieves the value (text) from the <textarea> with ID query-input.
+                // This is the SQL query entered by the user.
                 if (data.success) {
-                    // If the query succeeds, display the result in a formatted way
-                    $('#output').html(`<pre>${JSON.stringify(data.result, null, 2)}</pre>`);
+                    const results = data.result;
+    
+                    if (Array.isArray(results) && results.length > 0 && Array.isArray(results[0])) {
+                        let tableHtml = '<table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">';
+                        tableHtml += '<thead><tr>';
+    
+                        const keys = results[0][0] instanceof Object 
+                            ? Object.keys(results[0][0]) 
+                            : Array.from({ length: results[0][0].length }, (_, i) => `Column ${i + 1}`);
+                        
+                        for (const key of keys) {
+                            tableHtml += `<th>${key}</th>`;
+                        }
+                        tableHtml += '</tr></thead><tbody>';
+    
+                        for (const row of results[0]) {
+                            tableHtml += '<tr>';
+                            if (row instanceof Object) {
+                                for (const cell of Object.values(row)) {
+                                    tableHtml += `<td>${cell}</td>`;
+                                }
+                            } else {
+                                for (const cell of row) {
+                                    tableHtml += `<td>${cell}</td>`;
+                                }
+                            }
+                            tableHtml += '</tr>';
+                        }
+    
+                        tableHtml += '</tbody></table>';
+                        $('#output').html(tableHtml);
+                    } else {
+                        $('#output').html(`<pre>${JSON.stringify(results, null, 2)}</pre>`);
+                    }
                 } else {
-                    // If there is an error, display the error message in red
                     $('#output').html(`<p style="color: red;">Error: ${data.error}</p>`);
                 }
             });
         });
-
-        // Handles closing and exporting the database when the "Export & Close Database" button is clicked
+    
         $('#close-db').click(function () {
-            // Sends a request to the Flask server's /close endpoint
             $.post('/close', {}, function (data) {
                 if (data.success) {
-                    // If successful, show a success message
                     alert(data.message);
                 } else {
-                    // If there is an error, show the error message
                     alert(`Error: ${data.error}`);
                 }
             });
