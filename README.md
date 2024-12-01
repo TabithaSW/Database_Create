@@ -1,6 +1,7 @@
 # Custom Database Management System
 This project is a lightweight, individual statement or file-based database management system that takes in SQL and generates custom databases with tables and views. The database can be generated with ease, modified via an intuitive Flask web application, and exported as a JSON file to the user's PC.
-<img src="DBMS_Logo.png" alt="DBMS" width="250" height="250">
+
+<img src="DBMS_Logo.png" alt="DBMS" width="150" height="150">
 
 
 # Key Features:
