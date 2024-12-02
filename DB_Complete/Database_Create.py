@@ -172,7 +172,6 @@ class Utility_Functions(object):
             if len(query) == len(old_query):
                 print(query[0])
                 raise AssertionError("Query didn't get shorter.")
-        print("ORIGINAL QUERY INPUT",query)
         print("FINAL TOKENS: ", tokens)
         return tokens
 
@@ -411,6 +410,7 @@ class Connection(Utility_Functions):
             # Parse output columns
             while True:
                 col = tokens.pop(0)  # e.g., student.name or student.*
+                # Adding support for using * to mean all.
                 if "." in col:
                     parts = col.split('.')
                     output_columns.append(parts[1])
@@ -462,7 +462,7 @@ class Connection(Utility_Functions):
                     output_columns, table_name, order_by_columns, where_col, where_value, operator, distinct
                 )
             else:
-                print("SELECT NO WHERE CLAUSE:",output_columns, table_name, order_by_columns, distinct)
+                print("SELECT NO WHERE CLAUSE CONNECTION CLASS DEBUG:",output_columns, table_name, order_by_columns, distinct)
                 return self.database.select(output_columns, table_name, order_by_columns, distinct)
 
 
@@ -763,6 +763,7 @@ class Database(Utility_Functions):
         """
         Selects and orders rows based on specified columns, optionally removing duplicates.
         """
+        print("SELECT DATABASE FUNCTION DEBUG:",output_columns, table_name, order_by_columns, distinct)
         assert table_name in self.tables
         table = self.tables[table_name]
         return table.select_rows(output_columns, order_by_columns, distinct)
@@ -869,6 +870,7 @@ class Table(Utility_Functions):
                     new_output_columns.extend(self.column_names)
                 else:
                     new_output_columns.append(col)
+            print("DEBUG: Expanded columns for '*':", new_output_columns)  # Debugging
             return new_output_columns
 
         def check_columns_exist(columns):
