@@ -863,13 +863,17 @@ class Table(Utility_Functions):
                     new_output_columns.extend(self.column_names)
                 else:
                     new_output_columns.append(col)
+            print("DEBUG: Expanded columns for '*':", new_output_columns)  # Debugging
             return new_output_columns
 
         def check_columns_exist(columns):
             assert all(col in self.column_names for col in columns)
 
         def sort_rows(order_by_columns):
-            return sorted(self.rows, key=itemgetter(*order_by_columns))
+            # Only sort if order_by_columns is not empty
+            if order_by_columns:
+                return sorted(self.rows, key=itemgetter(*order_by_columns))
+            return self.rows  # Return rows as is if no sorting is needed
 
         def generate_tuples(rows, output_columns):
             seen = set()
@@ -883,7 +887,9 @@ class Table(Utility_Functions):
 
         expanded_output_columns = expand_star_column(output_columns)
         check_columns_exist(expanded_output_columns)
-        check_columns_exist(order_by_columns)
+        # Skip check if order_by_columns is empty
+        if order_by_columns:
+            check_columns_exist(order_by_columns)
         sorted_rows = sort_rows(order_by_columns)
         print("TEST SELECT NO WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
         return generate_tuples(sorted_rows, expanded_output_columns)
@@ -927,10 +933,14 @@ class Table(Utility_Functions):
                         elif operator == "!=" and value != where_val:
                             where_sort.append(dict_)
 
-        sorted_rows = sorted(where_sort, key=itemgetter(*order_by_columns))
+            # Handle empty order_by_columns
+        if order_by_columns:
+            sorted_rows = sorted(where_sort, key=itemgetter(*order_by_columns))
+        else:
+            sorted_rows = where_sort  # No sorting if order_by_columns is empty
+
         print("TEST SELECT WHERE CLAUSE ROWS OUTPUT:",sorted_rows, expanded_output_columns)
         return generate_tuples(sorted_rows, expanded_output_columns)
-
 
 
 Connection = connect("test_database")

@@ -1,0 +1,3 @@
+CREATE TABLE peanuts2 (test INTEGER);
+INSERT INTO peanuts2 VALUES (6.7);
+SELECT * FROM peanuts2;
