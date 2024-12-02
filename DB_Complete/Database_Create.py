@@ -82,15 +82,19 @@ class Utility_Functions(object):
     @staticmethod
     def remove_text(query, tokens):
         """
-        Extracts text enclosed in single quotes.
+        Extracts text enclosed in single or double quotes.
         """
-        assert query[0] == "'"
-        query = query[1:]
-        end_quote_index = query.find("'")
-        text = query[:end_quote_index]
-        tokens.append(text)
-        query = query[end_quote_index + 1:]
+        assert query[0] in ("'", '"'), "Query must start with a single or double quote"
+        quote_char = query[0]  # Identify whether it's a single or double quote
+        query = query[1:]  # Remove the opening quote
+        end_quote_index = query.find(quote_char)  # Find the matching closing quote
+        if end_quote_index == -1:
+            raise ValueError(f"Closing quote ({quote_char}) not found in query")
+        text = query[:end_quote_index]  # Extract the text within quotes
+        tokens.append(text)  # Append the extracted text to tokens
+        query = query[end_quote_index + 1:]  # Remove the closing quote and remaining text
         return query
+
 
     @staticmethod
     def remove_integer(query, tokens):
@@ -155,9 +159,8 @@ class Utility_Functions(object):
                 query = query[1:]
                 continue
 
-            # NEED TO COVER: >, <, =, !=, IS NOT, IS.
-
-            if query[0] == "'":
+            if query[0] in ("'", '"'):
+                # Updated for double quotes.
                 query = Utility_Functions.remove_text(query, tokens)
                 continue
 

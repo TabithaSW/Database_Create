@@ -65,14 +65,18 @@ class Utility_Functions(object):
     @staticmethod
     def remove_text(query, tokens):
         """
-        Extracts text enclosed in single quotes.
+        Extracts text enclosed in single or double quotes.
         """
-        assert query[0] == "'"
-        query = query[1:]
-        end_quote_index = query.find("'")
-        text = query[:end_quote_index]
-        tokens.append(text)
-        query = query[end_quote_index + 1:]
+        print("DEBUG REMOVE TEXT QUERY =",query, "TOKENS:",tokens)
+        assert query[0] in ("'", '"'), "Query must start with a single or double quote"
+        quote_char = query[0]  # Identify whether it's a single or double quote
+        query = query[1:]  # Remove the opening quote
+        end_quote_index = query.find(quote_char)  # Find the matching closing quote
+        if end_quote_index == -1:
+            raise ValueError(f"Closing quote ({quote_char}) not found in query")
+        text = query[:end_quote_index]  # Extract the text within quotes
+        tokens.append(text)  # Append the extracted text to tokens
+        query = query[end_quote_index + 1:]  # Remove the closing quote and remaining text
         return query
 
     @staticmethod
@@ -140,7 +144,7 @@ class Utility_Functions(object):
 
             # NEED TO COVER: >, <, =, !=, IS NOT, IS.
 
-            if query[0] == "'":
+            if query[0] in ("'", '"'):
                 query = Utility_Functions.remove_text(query, tokens)
                 continue
 
@@ -153,8 +157,9 @@ class Utility_Functions(object):
                 continue
 
             if len(query) == len(old_query):
-                print(query[0])
+                print("TOKENS:",tokens,"QUERY[0]",query[0])
                 raise AssertionError("Query didn't get shorter.")
+            
         print("ORIGINAL QUERY INPUT",query)
         print("FINAL TOKENS: ", tokens)
         return tokens
