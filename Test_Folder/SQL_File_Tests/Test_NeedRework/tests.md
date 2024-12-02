@@ -1,0 +1,2 @@
+- Need to rewrite work for ascending, descending, min, max, isolating connections, and joins. 
+- Need to rework empty values and NULLS.

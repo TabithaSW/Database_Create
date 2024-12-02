@@ -32,6 +32,8 @@ A lightweight, individual query or file-based database management system that ta
 # In Progress:
 - Support for ASCENDING/DESCENDING statements.
 - Support for INNER, LEFT, FULL OUTER, and RIGHT JOIN statements.
+- Support for aggregate SUM, MIN, MAX.
+- SUpport for isolated connection based transactions.
 - Support for different file types being exported using custom file conversion commands.
 - Support for NULLs.
 - Updating the Flask application for users to create and query their own database online and export it to their computer.
