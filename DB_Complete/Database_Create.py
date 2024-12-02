@@ -729,53 +729,25 @@ class Database(Utility_Functions):
         Specific to:
         - OPERATORS: >, <, =, !=, IS, IS NOT
         """
-        # Loop through the list of all rows,
-        for dict_ in self.tables[table_name].rows:
-            # Each row is a dictionary, loop through the key/values.
-            for key, value in dict_.items():
-                # If the column specified by where exists,
-                if key == col_name:
-                    # Change
-                    if value is not None:
-                        # Check for operator instance:
-                        if operator == ">":
-                            if value > constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "<":
-                            if value < constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "=":
-                            if value == constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "!=":
-                            if value != constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        else:
-                            print("ISSUE HERE!")
+        # Define a helper function to evaluate the condition
+        def matches_condition(value):
+            if operator == ">":
+                return value > constant
+            elif operator == "<":
+                return value < constant
+            elif operator == "=":
+                return value == constant
+            elif operator == "!=":
+                return value != constant
+            else:
+                print("ISSUE HERE!")
+                return False
 
-        # Loop through the list of all rows,
-        for dict_ in self.tables[table_name].rows:
-            # Each row is a dictionary, loop through the key/values.
-            for key, value in dict_.items():
-                # If the column specified by where exists,
-                if key == col_name:
-                    # Change
-                    if value is not None:
-                        # Check for operator instance:
-                        if operator == ">":
-                            if value > constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "<":
-                            if value < constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "=":
-                            if value == constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        elif operator == "!=":
-                            if value != constant:
-                                self.tables[table_name].rows.remove(dict_)
-                        else:
-                            print("ISSUE HERE!")
+        # Filter the rows by removing those that match the condition
+        self.tables[table_name].rows = [
+            row for row in self.tables[table_name].rows
+            if not (row.get(col_name) is not None and matches_condition(row.get(col_name)))
+        ]
 
 
     def insert_into(self, table_name, row_contents):

@@ -23,7 +23,7 @@ A lightweight, individual query or file-based database management system that ta
 - SELECT WITH WHERE
 - SELECT WITH ORDER BY
 - UPDATE
-- DELETE
+- DELETE FROM 
 - BEGIN TRANSACTION
 - COMMIT TRANSACTION
 - ROLLBACK TRANSACTION
