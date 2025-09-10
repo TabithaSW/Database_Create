@@ -15,7 +15,7 @@ A lightweight, individual query or file-based database management system that ta
 **Data Export:** Allows seamless export of the database as a JSON file for easy storage or integration with other tools and systems.
 
 # SQL Statement Support for:
-- CREATE TABLE
+- CREATE TABLE -- Requires params, EXAMPLE: CREATE TABLE purchase_table (item TEXT, value REAL, count INTEGER);
 - DROP TABLE
 - INSERT INTO
 - SELECT
