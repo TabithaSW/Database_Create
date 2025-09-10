@@ -3,6 +3,8 @@ A lightweight, individual query or file-based database management system that ta
 
 <img src="DBMS_Logo.png" alt="DBMS" width="150" height="150">
 
+<img src="APP_SCREENSHOT.png">
+
 
 # Key Features:
 
