@@ -1,5 +1,5 @@
 # Custom Database Management System
-A lightweight, individual query or file-based database management system that takes in SQL and generates custom databases with tables and views. The database can be generated with ease, modified via an intuitive Flask web application, and exported as a JSON file to the user's PC.
+A lightweight query file-based database management system that takes in SQL and generates custom databases with tables and views. The database can be generated with ease, modified via an intuitive Flask web application, and exported as a JSON file to the user's PC.
 
 <img src="APP_SCREENSHOT.png">
 
